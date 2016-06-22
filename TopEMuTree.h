@@ -16,6 +16,7 @@ Float_t dilepPt_[nDilepMax];
 Float_t dilepPhi_[nDilepMax];
 Float_t dilepEta_[nDilepMax];
 Float_t dilepM_[nDilepMax];
+Float_t dilepDeltaPhi_[nDilepMax];
 
 const Int_t nMaxJets = 500;
 Int_t nJt_;
@@ -23,6 +24,7 @@ Float_t jtPt_[nMaxJets];
 Float_t jtPhi_[nMaxJets];
 Float_t jtEta_[nMaxJets];
 Float_t jtM_[nMaxJets];
+Float_t discr_csvV1_[nMaxJets];
 
 // List of branches
 TBranch        *b_hiBin;   //!
@@ -33,12 +35,14 @@ TBranch        *b_dilepPt;   //!
 TBranch        *b_dilepPhi;   //!
 TBranch        *b_dilepEta;   //!
 TBranch        *b_dilepM;   //!
+TBranch        *b_dilepDeltaPhi;   //!
 
 TBranch        *b_nJt;   //!
 TBranch        *b_jtPt;   //!
 TBranch        *b_jtPhi;   //!
 TBranch        *b_jtEta;   //!
 TBranch        *b_jtM;   //!
+TBranch        *b_discr_csvV1;//!
 
 void BookTree()
 {
@@ -55,12 +59,14 @@ void BookTree()
   topEMuTree_p->Branch("dilepPhi", dilepPhi_, "dilepPhi[nDilep]/F");
   topEMuTree_p->Branch("dilepEta", dilepEta_, "dilepEta[nDilep]/F");
   topEMuTree_p->Branch("dilepM", dilepM_, "dilepM[nDilep]/F");
+  topEMuTree_p->Branch("dilepDeltaPhi", dilepDeltaPhi_, "dilepDeltaPhi[nDilep]/F");
 
   topEMuTree_p->Branch("nJt", &nJt_, "nJt/I");
   topEMuTree_p->Branch("jtPt", jtPt_, "jtPt[nJt]/F");
   topEMuTree_p->Branch("jtPhi", jtPhi_, "jtPhi[nJt]/F");
   topEMuTree_p->Branch("jtEta", jtEta_, "jtEta[nJt]/F");
   topEMuTree_p->Branch("jtM", jtM_, "jtM[nJt]/F");
+  topEMuTree_p->Branch("discr_csvV1", discr_csvV1_, "discr_csvV1[nJt]/F");
  
   return;
 }

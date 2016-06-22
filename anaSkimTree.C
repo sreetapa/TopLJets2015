@@ -151,6 +151,8 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
         dilepEta_[ilep] = dileptons[ilep].Eta();
         dilepPhi_[ilep] = dileptons[ilep].Phi();
         dilepM_[ilep] = dileptons[ilep].M();
+
+        dilepDeltaPhi_[ilep] = fabs(TVector2::Phi_mpi_pi(electrons[ilep].Phi()-muons[ilep].Phi()))/TMath::Pi();
       }
       nJt_ = njets;
       for(int ij = 0; ij<(int)indexJets.size(); ++ij) {
