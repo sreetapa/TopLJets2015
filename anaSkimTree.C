@@ -23,8 +23,8 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
   BookTree();
 
   //input tree variables
-  unsigned int run, lumi;
-  ULong64_t evt;
+  // unsigned int run, lumi;
+  // ULong64_t evt;
   int hiBin;
   float vz;
   
@@ -35,6 +35,7 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
   float lepPhi[nLepMax];
   float lepEta[nLepMax];
   int lepChg[nLepMax];
+  float lepIso[nLepMax];
 
   const int nMaxJets = 500;
   int nJt;
@@ -44,9 +45,9 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
   float jtM[nMaxJets];
   float discr_csvV1[nMaxJets];
 
-  tr->SetBranchAddress("run", &run);
-  tr->SetBranchAddress("evt", &evt);
-  tr->SetBranchAddress("lumi", &lumi);
+  tr->SetBranchAddress("run", &run_);
+  tr->SetBranchAddress("evt", &evt_);
+  tr->SetBranchAddress("lumi", &lumi_);
   tr->SetBranchAddress("hiBin", &hiBin);
   tr->SetBranchAddress("vz", &vz);
   tr->SetBranchAddress("nLep", &nLep);
@@ -55,6 +56,7 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
   tr->SetBranchAddress("lepPhi", lepPhi);
   tr->SetBranchAddress("lepEta", lepEta);
   tr->SetBranchAddress("lepChg", lepChg);
+  tr->SetBranchAddress("lepIso", lepIso);
   tr->SetBranchAddress("nJt", &nJt);
   tr->SetBranchAddress("jtPt", jtPt);
   tr->SetBranchAddress("jtPhi", jtPhi);
@@ -79,8 +81,15 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
       for(int jlep = ilep+1; jlep<nLep;  jlep++) {
         if(lepID[ilep]==lepID[jlep]) continue;   //reject same flavor
         if(lepChg[ilep]==lepChg[jlep]) continue; //reject same sign
+
+        //do lepton isolation cut
+        if(hiBin<20 && lepIso[ilep]>0.58) continue;
+        else if(hiBin>=20 && hiBin<60 && lepIso[ilep]>0.45) continue;
+        else if(hiBin>=60 && hiBin<100 && lepIso[ilep]>0.3) continue;
+        else if(hiBin>=100 && hiBin<140 && lepIso[ilep]>0.24) continue;
+        else if(hiBin>=140 && lepIso[ilep]>0.18) continue;
         
-        if(iDebug) Printf("%d event %llu Found emu pair: %d %d",entry,evt,ilep,jlep);
+        if(iDebug) Printf("%d event %llu Found emu pair: %d %d",entry,evt_,ilep,jlep);
         if(lepID[ilep] == 11) {//first lepton is electron 
           indexEmu1.push_back(ilep);
           indexEmu2.push_back(jlep);
@@ -100,6 +109,8 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
     std::vector<TLorentzVector> dileptons;
     std::vector<TLorentzVector> electrons;
     std::vector<TLorentzVector> muons;
+    std::vector<int> index_muons;
+    std::vector<int> index_electrons;
     
     int npairs = (int)indexEmu1.size();
     for(int ilep = 0; ilep<npairs; ++ilep) {
@@ -117,6 +128,8 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
         electrons.push_back(ele);
         muons.push_back(muon);
         if(iDebug) Printf("dilepton pair %d mass: %f pt: %f",ilep,dilepton.M(),dilepton.Pt());
+        index_muons.push_back(im);
+        index_electrons.push_back(ie);
         ++emuPairsMassCut;
       }
     }
@@ -153,6 +166,8 @@ void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName
         dilepM_[ilep] = dileptons[ilep].M();
 
         dilepDeltaPhi_[ilep] = fabs(TVector2::Phi_mpi_pi(electrons[ilep].Phi()-muons[ilep].Phi()))/TMath::Pi();
+        muIso_[ilep] = lepIso[index_muons[ilep]];
+        eleIso_[ilep] = lepIso[index_electrons[ilep]];
       }
       nJt_ = njets;
       for(int ij = 0; ij<(int)indexJets.size(); ++ij) {
