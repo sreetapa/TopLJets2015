@@ -24,6 +24,7 @@ Float_t lepPt_[nLep];
 Float_t lepPhi_[nLep];
 Float_t lepEta_[nLep];
 Int_t lepChg_[nLep];
+Float_t lepIso_[nLep];
 
 const Int_t nMaxJets = 500;
 Int_t nJt_;
@@ -45,6 +46,7 @@ TBranch        *b_lepPt;   //!
 TBranch        *b_lepPhi;   //!
 TBranch        *b_lepEta;   //!
 TBranch        *b_lepChg;   //!
+TBranch        *b_lepIso; //!
 TBranch        *b_nJt;   //!
 TBranch        *b_jtPt;   //!
 TBranch        *b_jtPhi;   //!
@@ -71,7 +73,8 @@ void BookTree()
   skimTree_p->Branch("lepPhi", lepPhi_, Form("lepPhi[%d]/F", nLep));
   skimTree_p->Branch("lepEta", lepEta_, Form("lepEta[%d]/F", nLep));
   skimTree_p->Branch("lepChg", lepChg_, Form("lepChg[%d]/I", nLep));
-  
+  skimTree_p->Branch("lepIso", lepIso_, Form("lepIso[%d]/F", nLep)); 
+ 
   skimTree_p->Branch("nJt", &nJt_, "nJt/I");
   skimTree_p->Branch("jtPt", jtPt_, "jtPt[nJt]/F");
   skimTree_p->Branch("jtPhi", jtPhi_, "jtPhi[nJt]/F");
