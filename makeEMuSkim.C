@@ -8,6 +8,11 @@
 #include <string>
 #include <vector>
 
+#include "ForestTreeHeaders/ForestElectrons.h"
+#include "ForestTreeHeaders/ForestMuons.h"
+
+#include "Helpers/EnergyRegression.h"
+
 const bool isDebug = false;
 
 const float jetPtCut = 25.;
@@ -89,6 +94,11 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
   inFileNames_p->push_back(inFileName);
   // if(strcmp(inFileName.c_str(), "") != 0) inFileNames_p->push_back(inFileName);
 
+  //  Printf("Create EnergyRegression object");
+  EnergyRegression energyRegression;
+  //Printf("Create EnergyRegression object done. calling initreader");
+  energyRegression.initreader();
+  
   //initialize electron Id variables [barrel/endcap][centBin]
   eleSigmaIEtaIEta_VetoCut[0][0] = 0.01325;
   eleSigmaIEtaIEta_VetoCut[1][0] = 0.04272;
@@ -162,43 +172,34 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
   eleEoverPInv_VetoCut[0][3] = 0.23732;
   eleEoverPInv_VetoCut[1][3] = 0.11148;
   
+  TChain *lepTree_p = new TChain("ggHiNtuplizer/EventTree");
+  TChain *jetTree_p = new TChain("akCs2PFJetAnalyzer/t");
+  TChain *hiTree_p = new TChain("hiEvtAnalyzer/HiTree");
+  TChain *hltTree_p = new TChain("hltanalysis/HltTree");
+  TChain *pfTree_p = new TChain("pfcandAnalyzerCS/pfTree");
+  TChain *skimAnaTree_p = new TChain("skimanalysis/HltTree");
+  
   const int nFiles = (int)inFileNames_p->size();
 
-
   for(int fileIter = 0; fileIter < nFiles; fileIter++){
-    std::cout << "On file: " << fileIter << "/" << nFiles << std::endl;
+    std::cout << "On file: " << fileIter << "/" << nFiles << "  " << inFileNames_p->at(fileIter).c_str()  << std::endl;
+    lepTree_p->Add(inFileNames_p->at(fileIter).c_str());
+    jetTree_p->Add(inFileNames_p->at(fileIter).c_str());
+    hiTree_p->Add(inFileNames_p->at(fileIter).c_str());
+    hltTree_p->Add(inFileNames_p->at(fileIter).c_str());
+    pfTree_p->Add(inFileNames_p->at(fileIter).c_str());
+    skimAnaTree_p->Add(inFileNames_p->at(fileIter).c_str());
+  }
+    // TFile *inFile_p = TFile::Open(inFileNames_p->at(fileIter).c_str(), "READ");
+    // TTree *lepTree_p = dynamic_cast<TTree*>(inFile_p->Get("ggHiNtuplizer/EventTree"));
+    // TTree *jetTree_p = dynamic_cast<TTree*>(inFile_p->Get("akCs2PFJetAnalyzer/t"));
+    // TTree *hiTree_p = dynamic_cast<TTree*>(inFile_p->Get("hiEvtAnalyzer/HiTree"));
+    // TTree *hltTree_p = dynamic_cast<TTree*>(inFile_p->Get("hltanalysis/HltTree"));
+    // TTree *pfTree_p = dynamic_cast<TTree*>(inFile_p->Get("pfcandAnalyzerCS/pfTree"));
+    // TTree *skimAnaTree_p = dynamic_cast<TTree*>(inFile_p->Get("skimanalysis/HltTree"));
 
-    TFile *inFile_p = new TFile(inFileNames_p->at(fileIter).c_str(), "READ");
-    TTree *lepTree_p = dynamic_cast<TTree*>(inFile_p->Get("ggHiNtuplizer/EventTree"));
-    TTree *jetTree_p = dynamic_cast<TTree*>(inFile_p->Get("akCs2PFJetAnalyzer/t"));
-    TTree *hiTree_p = dynamic_cast<TTree*>(inFile_p->Get("hiEvtAnalyzer/HiTree"));
-    TTree *hltTree_p = dynamic_cast<TTree*>(inFile_p->Get("hltanalysis/HltTree"));
-    TTree *pfTree_p = dynamic_cast<TTree*>(inFile_p->Get("pfcandAnalyzerCS/pfTree"));
-    TTree *skimTree_p = dynamic_cast<TTree*>(inFile_p->Get("skimanalysis/HltTree"));
-    
-    std::vector<float>* muPt_p = 0;
-    std::vector<float>* muPhi_p = 0;
-    std::vector<float>* muEta_p = 0;
-    std::vector<int>* muChg_p = 0;
-    std::vector<float>* muChi2NDF_p = 0;
-    std::vector<float>* muInnerD0_p = 0;
-    std::vector<float>* muInnerDz_p = 0;
-    std::vector<int>* muMuonHits_p = 0;
-    std::vector<int>* muStations_p = 0;
-    std::vector<int>* muTrkLayers_p = 0;
-    std::vector<int>* muPixelHits_p = 0;
-
-    std::vector<float>* elePt_p = 0;
-    std::vector<float>* elePhi_p = 0;
-    std::vector<float>* eleEta_p = 0;
-    std::vector<int>* eleChg_p = 0;
-    std::vector<float>* eleSigmaIEtaIEta_p = 0;
-    std::vector<float>* eleDEtaAtVtx_p = 0;
-    std::vector<float>* eleDPhiAtVtx_p = 0;
-    std::vector<float>* eleHOverE_p = 0;
-    std::vector<float>* eleD0_p = 0;
-    std::vector<float>* eleDz_p = 0;
-    std::vector<float>* eleEoverPInv_p = 0;
+    ForestMuons fForestMu;
+    ForestElectrons fForestEle;
     
     const int maxJets = 5000;
     int           nref;
@@ -222,55 +223,53 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
     int pprimaryVertexFilter = 1;
     int pcollisionEventSelection = 1;
     
-    lepTree_p->SetBranchStatus("*", 0);
-    lepTree_p->SetBranchStatus("muPt", 1);
-    lepTree_p->SetBranchStatus("muPhi", 1);
-    lepTree_p->SetBranchStatus("muEta", 1);
-    lepTree_p->SetBranchStatus("muCharge", 1);
-    lepTree_p->SetBranchStatus("muChi2NDF", 1);
-    lepTree_p->SetBranchStatus("muInnerD0", 1);
-    lepTree_p->SetBranchStatus("muInnerDz", 1);
-    lepTree_p->SetBranchStatus("muMuonHits", 1);
-    lepTree_p->SetBranchStatus("muStations", 1);
-    lepTree_p->SetBranchStatus("muTrkLayers", 1);
-    lepTree_p->SetBranchStatus("muPixelHits", 1);
+    lepTree_p->SetBranchStatus("mu*", 1);
+    // lepTree_p->SetBranchStatus("muPt", 1);
+    // lepTree_p->SetBranchStatus("muPhi", 1);
+    // lepTree_p->SetBranchStatus("muEta", 1);
+    // lepTree_p->SetBranchStatus("muCharge", 1);
+    // lepTree_p->SetBranchStatus("muChi2NDF", 1);
+    // lepTree_p->SetBranchStatus("muInnerD0", 1);
+    // lepTree_p->SetBranchStatus("muInnerDz", 1);
+    // lepTree_p->SetBranchStatus("muMuonHits", 1);
+    // lepTree_p->SetBranchStatus("muStations", 1);
+    // lepTree_p->SetBranchStatus("muTrkLayers", 1);
+    // lepTree_p->SetBranchStatus("muPixelHits", 1);
     
-    lepTree_p->SetBranchAddress("muPt", &muPt_p);
-    lepTree_p->SetBranchAddress("muPhi", &muPhi_p);
-    lepTree_p->SetBranchAddress("muEta", &muEta_p);
-    lepTree_p->SetBranchAddress("muCharge", &muChg_p);
-    lepTree_p->SetBranchAddress("muChi2NDF", &muChi2NDF_p);
-    lepTree_p->SetBranchAddress("muInnerD0", &muInnerD0_p);
-    lepTree_p->SetBranchAddress("muInnerDz", &muInnerDz_p);
-    lepTree_p->SetBranchAddress("muMuonHits", &muMuonHits_p);
-    lepTree_p->SetBranchAddress("muStations", &muStations_p);
-    lepTree_p->SetBranchAddress("muTrkLayers", &muTrkLayers_p);
-    lepTree_p->SetBranchAddress("muPixelHits", &muPixelHits_p);    
+    lepTree_p->SetBranchAddress("muPt", &fForestMu.muPt);
+    lepTree_p->SetBranchAddress("muPhi", &fForestMu.muPhi);
+    lepTree_p->SetBranchAddress("muEta", &fForestMu.muEta);
+    lepTree_p->SetBranchAddress("muCharge", &fForestMu.muCharge);
+    lepTree_p->SetBranchAddress("muChi2NDF", &fForestMu.muChi2NDF);
+    lepTree_p->SetBranchAddress("muInnerD0", &fForestMu.muInnerD0);
+    lepTree_p->SetBranchAddress("muInnerDz", &fForestMu.muInnerDz);
+    lepTree_p->SetBranchAddress("muMuonHits", &fForestMu.muMuonHits);
+    lepTree_p->SetBranchAddress("muStations", &fForestMu.muStations);
+    lepTree_p->SetBranchAddress("muTrkLayers", &fForestMu.muTrkLayers);
+    lepTree_p->SetBranchAddress("muPixelHits", &fForestMu.muPixelHits);    
+    
+    
+    lepTree_p->SetBranchStatus("ele*", 1);
+    
+    lepTree_p->SetBranchAddress("elePt", &fForestEle.elePt);
+    lepTree_p->SetBranchAddress("elePhi", &fForestEle.elePhi);
+    lepTree_p->SetBranchAddress("eleEta", &fForestEle.eleEta);
+    lepTree_p->SetBranchAddress("eleCharge", &fForestEle.eleCharge);
+    lepTree_p->SetBranchAddress("eleSigmaIEtaIEta", &fForestEle.eleSigmaIEtaIEta);
+    lepTree_p->SetBranchAddress("eledEtaAtVtx", &fForestEle.eledEtaAtVtx);
+    lepTree_p->SetBranchAddress("eledPhiAtVtx", &fForestEle.eledPhiAtVtx);
+    lepTree_p->SetBranchAddress("eleHoverE", &fForestEle.eleHoverE);
+    lepTree_p->SetBranchAddress("eleD0", &fForestEle.eleD0);
+    lepTree_p->SetBranchAddress("eleDz", &fForestEle.eleDz);
+    lepTree_p->SetBranchAddress("eleEoverPInv", &fForestEle.eleEoverPInv);
 
-    lepTree_p->SetBranchStatus("elePt", 1);
-    lepTree_p->SetBranchStatus("elePhi", 1);
-    lepTree_p->SetBranchStatus("eleEta", 1);
-    lepTree_p->SetBranchStatus("eleCharge", 1);
-    lepTree_p->SetBranchStatus("eleSigmaIEtaIEta", 1);
-    lepTree_p->SetBranchStatus("eledEtaAtVtx", 1);
-    lepTree_p->SetBranchStatus("eledPhiAtVtx", 1);
-    lepTree_p->SetBranchStatus("eleHoverE", 1);
-    lepTree_p->SetBranchStatus("eleD0", 1);
-    lepTree_p->SetBranchStatus("eleDz", 1);
-    lepTree_p->SetBranchStatus("eleEoverPInv", 1);
-    
-    lepTree_p->SetBranchAddress("elePt", &elePt_p);
-    lepTree_p->SetBranchAddress("elePhi", &elePhi_p);
-    lepTree_p->SetBranchAddress("eleEta", &eleEta_p);
-    lepTree_p->SetBranchAddress("eleCharge", &eleChg_p);
-    lepTree_p->SetBranchAddress("eleSigmaIEtaIEta", &eleSigmaIEtaIEta_p);
-    lepTree_p->SetBranchAddress("eledEtaAtVtx", &eleDEtaAtVtx_p);
-    lepTree_p->SetBranchAddress("eledPhiAtVtx", &eleDPhiAtVtx_p);
-    lepTree_p->SetBranchAddress("eleHoverE", &eleHOverE_p);
-    lepTree_p->SetBranchAddress("eleD0", &eleD0_p);
-    lepTree_p->SetBranchAddress("eleDz", &eleDz_p);
-    lepTree_p->SetBranchAddress("eleEoverPInv", &eleEoverPInv_p);
-    
+    lepTree_p->SetBranchAddress("eleSCPhi", &fForestEle.eleSCPhi);
+    lepTree_p->SetBranchAddress("eleSCEta", &fForestEle.eleSCEta);
+    lepTree_p->SetBranchAddress("eleSigmaIEtaIEta_2012", &fForestEle.eleSigmaIEtaIEta_2012);
+    lepTree_p->SetBranchAddress("eleSigmaIPhiIPhi", &fForestEle.eleSigmaIPhiIPhi);
+    lepTree_p->SetBranchAddress("eleSCEtaWidth", &fForestEle.eleSCEtaWidth);
+    lepTree_p->SetBranchAddress("eleSCPhiWidth", &fForestEle.eleSCPhiWidth);
+        
     jetTree_p->SetBranchStatus("*", 0);
     jetTree_p->SetBranchStatus("nref", 1);
     jetTree_p->SetBranchStatus("jtpt", 1);
@@ -307,10 +306,10 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
     hltTree_p->SetBranchStatus("HLT_HIL2Mu15_v2",1);
     hltTree_p->SetBranchAddress("HLT_HIL2Mu15_v2",&trig);
 
-    skimTree_p->SetBranchAddress("phfCoincFilter3",&phfCoincFilter);
-    skimTree_p->SetBranchAddress("HBHENoiseFilterResult",&HBHENoiseFilterResult);
-    skimTree_p->SetBranchAddress("pprimaryVertexFilter",&pprimaryVertexFilter);
-    skimTree_p->SetBranchAddress("pcollisionEventSelection",&pcollisionEventSelection);
+    skimAnaTree_p->SetBranchAddress("phfCoincFilter3",&phfCoincFilter);
+    skimAnaTree_p->SetBranchAddress("HBHENoiseFilterResult",&HBHENoiseFilterResult);
+    skimAnaTree_p->SetBranchAddress("pprimaryVertexFilter",&pprimaryVertexFilter);
+    skimAnaTree_p->SetBranchAddress("pcollisionEventSelection",&pcollisionEventSelection);
     
     if(isDebug) std::cout << __LINE__ << std::endl;
     
@@ -327,13 +326,13 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       
       if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
       if(isDebug) std::cout << __LINE__ << std::endl;
-      
+
       lepTree_p->GetEntry(entry);
       jetTree_p->GetEntry(entry);
       hiTree_p->GetEntry(entry);
       hltTree_p->GetEntry(entry);
       pfTree_p->GetEntry(entry);
-      skimTree_p->GetEntry(entry);
+      skimAnaTree_p->GetEntry(entry);
       
       if(!trig) continue;
       if(!phfCoincFilter) continue;
@@ -392,82 +391,91 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       
       if(isDebug) std::cout << __LINE__ << std::endl;
       
-      const int nMu = (int)muPt_p->size();
-      
-      const int muTrkLayersCut = 5;
-      const int muPixelHitsCut = 0;
-
       //Find two leading muons
-      for(int muIter = 0; muIter < nMu; muIter++){
-	if(TMath::Abs(muEta_p->at(muIter)) > muEtaCut) continue;
-	if(muPt_p->at(muIter) < muPtCut) continue;
+      for(unsigned int muIter = 0; muIter < fForestMu.muPt->size(); ++muIter) {
+	if(TMath::Abs(fForestMu.muEta->at(muIter)) > muEtaCut) continue;
+	if(fForestMu.muPt->at(muIter) < muPtCut) continue;
 	
-	if(muChi2NDF_p->at(muIter) >= muChi2NDFCut) continue;
-	if(TMath::Abs(muInnerD0_p->at(muIter)) > muInnerD0Cut) continue;
-	if(TMath::Abs(muInnerDz_p->at(muIter)) > muInnerDzCut) continue;
-	if(muMuonHits_p->at(muIter) <= muMuonHitsCut) continue;
-	if(muStations_p->at(muIter) <= muStationsCut) continue;
-	if(muTrkLayers_p->at(muIter) <= muTrkLayersCut) continue;
-	if(muPixelHits_p->at(muIter) <= muPixelHitsCut) continue;
+	if(fForestMu.muChi2NDF->at(muIter) >= muChi2NDFCut) continue;
+	if(TMath::Abs(fForestMu.muInnerD0->at(muIter)) > muInnerD0Cut) continue;
+	if(TMath::Abs(fForestMu.muInnerDz->at(muIter)) > muInnerDzCut) continue;
+	if(fForestMu.muMuonHits->at(muIter) <= muMuonHitsCut) continue;
+	if(fForestMu.muStations->at(muIter) <= muStationsCut) continue;
+	if(fForestMu.muTrkLayers->at(muIter) <= muTrkLayersCut) continue;
+	if(fForestMu.muPixelHits->at(muIter) <= muPixelHitsCut) continue;
 
-    	if(muPt_p->at(muIter) > lepPt_[0]){
-	  tempMuPt_[1] = tempMuPt_[0];
+    	if(fForestMu.muPt->at(muIter) > lepPt_[0]){
+	  tempMuPt_[1]  = tempMuPt_[0];
 	  tempMuPhi_[1] = tempMuPhi_[0];
 	  tempMuEta_[1] = tempMuEta_[0];
 	  tempMuChg_[1] = tempMuChg_[0];
 	  tempMuIso_[1] = tempMuIso_[0]; 
  
-	  tempMuPt_[0] = muPt_p->at(muIter);
-	  tempMuPhi_[0] = muPhi_p->at(muIter);
-	  tempMuEta_[0] = muEta_p->at(muIter);
-	  tempMuChg_[0] = muChg_p->at(muIter);
-          tempMuIso_[0] = calcLeptonIsolation(muPt_p->at(muIter),muEta_p->at(muIter),muPhi_p->at(muIter),pfPt,pfEta,pfPhi); //iso;
+	  tempMuPt_[0]  = fForestMu.muPt->at(muIter);
+	  tempMuPhi_[0] = fForestMu.muPhi->at(muIter);
+	  tempMuEta_[0] = fForestMu.muEta->at(muIter);
+	  tempMuChg_[0] = fForestMu.muCharge->at(muIter);
+          tempMuIso_[0] = calcLeptonIsolation(fForestMu.muPt->at(muIter),fForestMu.muEta->at(muIter),fForestMu.muPhi->at(muIter),pfPt,pfEta,pfPhi); //iso;
 	}
-	else if(muPt_p->at(muIter) > tempMuPt_[1]){
-	  tempMuPt_[1] = muPt_p->at(muIter);
-	  tempMuPhi_[1] = muPhi_p->at(muIter);
-	  tempMuEta_[1] = muEta_p->at(muIter);
-	  tempMuChg_[1] = muChg_p->at(muIter);
-          tempMuIso_[1] = calcLeptonIsolation(muPt_p->at(muIter),muEta_p->at(muIter),muPhi_p->at(muIter),pfPt,pfEta,pfPhi);//iso;
+	else if(fForestMu.muPt->at(muIter) > tempMuPt_[1]){
+	  tempMuPt_[1]  = fForestMu.muPt->at(muIter);
+	  tempMuPhi_[1] = fForestMu.muPhi->at(muIter);
+	  tempMuEta_[1] = fForestMu.muEta->at(muIter);
+	  tempMuChg_[1] = fForestMu.muCharge->at(muIter);
+          tempMuIso_[1] = calcLeptonIsolation(fForestMu.muPt->at(muIter),fForestMu.muEta->at(muIter),fForestMu.muPhi->at(muIter),pfPt,pfEta,pfPhi);//iso;
 	}
       }
 
       //Find two leading electrons
-      const int nEle = (int)elePt_p->size();
-      for(int eleIter = 0; eleIter < nEle; eleIter++){
-	if(TMath::Abs(eleEta_p->at(eleIter)) > eleEtaCut) continue;
-	if(elePt_p->at(eleIter) < elePtCut) continue;	
+      for(unsigned int eleIter = 0; eleIter < fForestEle.elePt->size(); ++eleIter) {
+	if(TMath::Abs(fForestEle.eleEta->at(eleIter)) > eleEtaCut) continue;
+	if(fForestEle.elePt->at(eleIter) < elePtCut) continue;	
         
 	int eleEtaCutPos = 0;
-	if(TMath::Abs(eleEta_p->at(eleIter)) > barrelEndcapEta) eleEtaCutPos = 1;
+	if(TMath::Abs(fForestEle.eleEta->at(eleIter)) > barrelEndcapEta) eleEtaCutPos = 1;
 
-   	if(eleSigmaIEtaIEta_p->at(eleIter) > eleSigmaIEtaIEta_VetoCut[eleEtaCutPos][centEleId]) continue;
-	if(TMath::Abs(eleDEtaAtVtx_p->at(eleIter)) > eleDEtaIn_VetoCut[eleEtaCutPos][centEleId]) continue;
-	if(TMath::Abs(eleDPhiAtVtx_p->at(eleIter)) > eleDPhiIn_VetoCut[eleEtaCutPos][centEleId]) continue;
-	if(eleHOverE_p->at(eleIter) > eleHOverE_VetoCut[eleEtaCutPos][centEleId]) continue;
-	if(TMath::Abs(eleD0_p->at(eleIter)) > eleD0_VetoCut[eleEtaCutPos][centEleId]) continue;
-	if(TMath::Abs(eleDz_p->at(eleIter)) > eleDZ_VetoCut[eleEtaCutPos][centEleId]) continue;
-        if(TMath::Abs(eleEoverPInv_p->at(eleIter)) > eleEoverPInv_VetoCut[eleEtaCutPos][centEleId]) continue;
+   	if(fForestEle.eleSigmaIEtaIEta->at(eleIter) > eleSigmaIEtaIEta_VetoCut[eleEtaCutPos][centEleId]) continue;
+	if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter)) > eleDEtaIn_VetoCut[eleEtaCutPos][centEleId]) continue;
+	if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter)) > eleDPhiIn_VetoCut[eleEtaCutPos][centEleId]) continue;
+	if(fForestEle.eleHoverE->at(eleIter) > eleHOverE_VetoCut[eleEtaCutPos][centEleId]) continue;
+	if(TMath::Abs(fForestEle.eleD0->at(eleIter)) > eleD0_VetoCut[eleEtaCutPos][centEleId]) continue;
+	if(TMath::Abs(fForestEle.eleDz->at(eleIter)) > eleDZ_VetoCut[eleEtaCutPos][centEleId]) continue;
+        if(TMath::Abs(fForestEle.eleEoverPInv->at(eleIter)) > eleEoverPInv_VetoCut[eleEtaCutPos][centEleId]) continue;
+
+        if(isDebug) std::cout << __LINE__ << std::endl;
+        float ptEle = fForestEle.elePt->at(eleIter);
+        //Printf("ptEle: %f",ptEle);
+        float eleCorr = energyRegression.ElectronRegressionTMVA(fForestEle.eleSCPhi->at(eleIter),
+                                                                fForestEle.eleSCEta->at(eleIter),
+                                                                fForestEle.eleSigmaIEtaIEta->at(eleIter),
+                                                                fForestEle.eleSigmaIPhiIPhi->at(eleIter),
+                                                                fForestEle.eleSCEtaWidth->at(eleIter),
+                                                                fForestEle.eleSCPhiWidth->at(eleIter),
+                                                                fForestEle.eleHoverE->at(eleIter));
+
+       
+        fForestEle.elePt->at(eleIter) = ptEle * eleCorr;
+        //Printf("ptEle: %f  eleCorr: %f elePt: %f",ptEle,eleCorr,fForestEle.elePt->at(eleIter));
         
-     	if(elePt_p->at(eleIter) > tempElePt_[0]){
+     	if(fForestEle.elePt->at(eleIter) > tempElePt_[0]){
 	  tempElePt_[1] = tempElePt_[0];
 	  tempElePhi_[1] = tempElePhi_[0];
 	  tempEleEta_[1] = tempEleEta_[0];
 	  tempEleChg_[1] = tempEleChg_[0];
           tempEleIso_[1] = tempEleIso_[0];	 
  
-	  tempElePt_[0] = elePt_p->at(eleIter);
-	  tempElePhi_[0] = elePhi_p->at(eleIter);
-	  tempEleEta_[0] = eleEta_p->at(eleIter);
-	  tempEleChg_[0] = eleChg_p->at(eleIter);
-          tempEleIso_[0] = calcLeptonIsolation(elePt_p->at(eleIter),eleEta_p->at(eleIter),elePhi_p->at(eleIter),pfPt,pfEta,pfPhi); //iso;
+	  tempElePt_[0] = fForestEle.elePt->at(eleIter);
+	  tempElePhi_[0] = fForestEle.elePhi->at(eleIter);
+	  tempEleEta_[0] = fForestEle.eleEta->at(eleIter);
+	  tempEleChg_[0] = fForestEle.eleCharge->at(eleIter);
+          tempEleIso_[0] = calcLeptonIsolation(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),pfPt,pfEta,pfPhi); //iso;
 	}
-	else if(elePt_p->at(eleIter) > tempElePt_[1]){
-	  tempElePt_[1] = elePt_p->at(eleIter);
-	  tempElePhi_[1] = elePhi_p->at(eleIter);
-	  tempEleEta_[1] = eleEta_p->at(eleIter);
-	  tempEleChg_[1] = eleChg_p->at(eleIter);
-          tempEleIso_[1] = calcLeptonIsolation(elePt_p->at(eleIter),eleEta_p->at(eleIter),elePhi_p->at(eleIter),pfPt,pfEta,pfPhi);//iso;
+	else if(fForestEle.elePt->at(eleIter) > tempElePt_[1]){
+	  tempElePt_[1]  = fForestEle.elePt->at(eleIter);
+	  tempElePhi_[1] = fForestEle.elePhi->at(eleIter);
+	  tempEleEta_[1] = fForestEle.eleEta->at(eleIter);
+	  tempEleChg_[1] = fForestEle.eleCharge->at(eleIter);
+          tempEleIso_[1] = calcLeptonIsolation(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),pfPt,pfEta,pfPhi);//iso;
 	}
       }
 
@@ -512,9 +520,8 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       
     }//entries loop
 
-    inFile_p->Close();
-    delete inFile_p;    
-  }
+    //    inFile_p->Close();
+    // delete inFile_p;    }
 
   outFile_p->cd();
   TNamed pathStr1("pathStr1", outFileName.c_str());
