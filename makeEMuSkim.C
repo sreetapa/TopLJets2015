@@ -8,58 +8,58 @@
 #include <string>
 #include <vector>
 
-const Bool_t isDebug = false;
+const bool isDebug = false;
 
-const Float_t jetPtCut = 25.;
+const float jetPtCut = 25.;
 
-const Float_t lepPtCut = 15;
+const float lepPtCut = 15;
 
 // FIXME: Need to check lepton selections for PbPb
-const Float_t muEtaCut = 2.1;
-const Float_t muPtCut = 15;
+const float muEtaCut = 2.1;
+const float muPtCut = 15;
 
-const Float_t muChi2NDFCut = 10;
-const Float_t muInnerD0Cut = 0.2;
-const Float_t muInnerDzCut = 0.5;
-const Int_t muMuonHitsCut = 0;
-const Int_t muStationsCut = 1;
-const Int_t muTrkLayersCut = 5;
-const Int_t muPixelHitsCut = 0;
+const float muChi2NDFCut   = 10;
+const float muInnerD0Cut   = 0.2;
+const float muInnerDzCut   = 0.5;
+const int   muMuonHitsCut  = 0;
+const int   muStationsCut  = 1;
+const int   muTrkLayersCut = 5;
+const int   muPixelHitsCut = 0;
 
 //PbPb: https://twiki.cern.ch/twiki/bin/view/CMS/ElectronPbPb5TeV#3_Selection_for_different_centra
 //pp:   https://twiki.cern.ch/twiki/bin/view/CMS/CutBasedElectronIdentificationRun2#Spring15_selection_25ns
 //WARNING: this code has PbPb selections activated
-const Float_t eleEtaCut = 2.4;
-const Float_t elePtCut = 15;
+const float eleEtaCut = 2.4;
+const float elePtCut = 15;
 
-const Float_t barrelEndcapEta = 1.479;
-const Int_t nBarrelEndcap = 2; // barrel = 0, endcap = 1
+const float barrelEndcapEta = 1.479;
+const int nBarrelEndcap = 2; // barrel = 0, endcap = 1
 //For PbPb electron ID is centrality dependent
 //centrality bins 0-20%, 20-40%, 40-70%, 70-100%
 const int nCentEleId = 4;
 double centMinEleId[4] = {0.,20.,40.,70.};
 double centMaxEleId[4] = {20.,40.,70.,100.};
 
-Float_t eleSigmaIEtaIEta_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleDEtaIn_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleDPhiIn_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleHOverE_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleRelIsoWithEA_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleOOEmooP_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleD0_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleDZ_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleMissingInnerHits_VetoCut[nBarrelEndcap][nCentEleId];
-Float_t eleEoverPInv_VetoCut[nBarrelEndcap][nCentEleId];
+float eleSigmaIEtaIEta_VetoCut[nBarrelEndcap][nCentEleId];
+float eleDEtaIn_VetoCut[nBarrelEndcap][nCentEleId];
+float eleDPhiIn_VetoCut[nBarrelEndcap][nCentEleId];
+float eleHOverE_VetoCut[nBarrelEndcap][nCentEleId];
+float eleRelIsoWithEA_VetoCut[nBarrelEndcap][nCentEleId];
+float eleOOEmooP_VetoCut[nBarrelEndcap][nCentEleId];
+float eleD0_VetoCut[nBarrelEndcap][nCentEleId];
+float eleDZ_VetoCut[nBarrelEndcap][nCentEleId];
+float eleMissingInnerHits_VetoCut[nBarrelEndcap][nCentEleId];
+float eleEoverPInv_VetoCut[nBarrelEndcap][nCentEleId];
 
-// const Float_t eleSigmaIEtaIEta_VetoCut[nBarrelEndcap] = {0.0114, 0.0352};
-// const Float_t eleDEtaIn_VetoCut[nBarrelEndcap] = {0.0152, 0.0113};
-// const Float_t eleDPhiIn_VetoCut[nBarrelEndcap] = {0.216, 0.237};
-// const Float_t eleHOverE_VetoCut[nBarrelEndcap] = {0.181, 0.116};
-// const Float_t eleRelIsoWithEA_VetoCut[nBarrelEndcap] = {0.126, 0.144};
-// const Float_t eleOOEmooP_VetoCut[nBarrelEndcap] = {0.207, 0.174};
-// const Float_t eleD0_VetoCut[nBarrelEndcap] = {0.0564, 0.222};
-// const Float_t eleDZ_VetoCut[nBarrelEndcap] = {0.472, 0.921};
-// const Float_t eleMissingInnerHits_VetoCut[nBarrelEndcap] = {2, 3};
+// const float eleSigmaIEtaIEta_VetoCut[nBarrelEndcap] = {0.0114, 0.0352};
+// const float eleDEtaIn_VetoCut[nBarrelEndcap] = {0.0152, 0.0113};
+// const float eleDPhiIn_VetoCut[nBarrelEndcap] = {0.216, 0.237};
+// const float eleHOverE_VetoCut[nBarrelEndcap] = {0.181, 0.116};
+// const float eleRelIsoWithEA_VetoCut[nBarrelEndcap] = {0.126, 0.144};
+// const float eleOOEmooP_VetoCut[nBarrelEndcap] = {0.207, 0.174};
+// const float eleD0_VetoCut[nBarrelEndcap] = {0.0564, 0.222};
+// const float eleDZ_VetoCut[nBarrelEndcap] = {0.472, 0.921};
+// const float eleMissingInnerHits_VetoCut[nBarrelEndcap] = {2, 3};
 
 int getCentBinEleId(double cent) {
 
@@ -162,19 +162,20 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
   eleEoverPInv_VetoCut[0][3] = 0.23732;
   eleEoverPInv_VetoCut[1][3] = 0.11148;
   
-  const Int_t nFiles = (Int_t)inFileNames_p->size();
+  const int nFiles = (int)inFileNames_p->size();
 
 
-  for(Int_t fileIter = 0; fileIter < nFiles; fileIter++){
+  for(int fileIter = 0; fileIter < nFiles; fileIter++){
     std::cout << "On file: " << fileIter << "/" << nFiles << std::endl;
 
-    TFile* inFile_p = new TFile(inFileNames_p->at(fileIter).c_str(), "READ");
-    TTree* lepTree_p = dynamic_cast<TTree*>(inFile_p->Get("ggHiNtuplizer/EventTree"));
-    TTree* jetTree_p = dynamic_cast<TTree*>(inFile_p->Get("akCs2PFJetAnalyzer/t"));
-    TTree* hiTree_p = dynamic_cast<TTree*>(inFile_p->Get("hiEvtAnalyzer/HiTree"));
-    TTree* hltTree_p = dynamic_cast<TTree*>(inFile_p->Get("hltanalysis/HltTree"));
+    TFile *inFile_p = new TFile(inFileNames_p->at(fileIter).c_str(), "READ");
+    TTree *lepTree_p = dynamic_cast<TTree*>(inFile_p->Get("ggHiNtuplizer/EventTree"));
+    TTree *jetTree_p = dynamic_cast<TTree*>(inFile_p->Get("akCs2PFJetAnalyzer/t"));
+    TTree *hiTree_p = dynamic_cast<TTree*>(inFile_p->Get("hiEvtAnalyzer/HiTree"));
+    TTree *hltTree_p = dynamic_cast<TTree*>(inFile_p->Get("hltanalysis/HltTree"));
     TTree *pfTree_p = dynamic_cast<TTree*>(inFile_p->Get("pfcandAnalyzerCS/pfTree"));
-
+    TTree *skimTree_p = dynamic_cast<TTree*>(inFile_p->Get("skimanalysis/HltTree"));
+    
     std::vector<float>* muPt_p = 0;
     std::vector<float>* muPhi_p = 0;
     std::vector<float>* muEta_p = 0;
@@ -200,12 +201,12 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
     std::vector<float>* eleEoverPInv_p = 0;
     
     const int maxJets = 5000;
-    Int_t           nref;
-    Float_t         jtpt[maxJets];   //[nref]
-    Float_t         jteta[maxJets];   //[nref]
-    Float_t         jtphi[maxJets];   //[nref]
-    Float_t         jtm[maxJets];   //[nref]
-    Float_t         discr_csvV1[maxJets]; //[nref]
+    int           nref;
+    float         jtpt[maxJets];   //[nref]
+    float         jteta[maxJets];   //[nref]
+    float         jtphi[maxJets];   //[nref]
+    float         jtm[maxJets];   //[nref]
+    float         discr_csvV1[maxJets]; //[nref]
 
     //pf particles pfId, pfPt, pfEta, pfPhi
     std::vector<int>           *pfId = 0;
@@ -213,8 +214,13 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
     std::vector<float>         *pfEta = 0;
     std::vector<float>         *pfPhi = 0;
     
-
     int trig = 0;
+
+    //event selections
+    int phfCoincFilter = 1;
+    int HBHENoiseFilterResult = 1;
+    int pprimaryVertexFilter = 1;
+    int pcollisionEventSelection = 1;
     
     lepTree_p->SetBranchStatus("*", 0);
     lepTree_p->SetBranchStatus("muPt", 1);
@@ -300,18 +306,23 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
     
     hltTree_p->SetBranchStatus("HLT_HIL2Mu15_v2",1);
     hltTree_p->SetBranchAddress("HLT_HIL2Mu15_v2",&trig);
+
+    skimTree_p->SetBranchAddress("phfCoincFilter3",&phfCoincFilter);
+    skimTree_p->SetBranchAddress("HBHENoiseFilterResult",&HBHENoiseFilterResult);
+    skimTree_p->SetBranchAddress("pprimaryVertexFilter",&pprimaryVertexFilter);
+    skimTree_p->SetBranchAddress("pcollisionEventSelection",&pcollisionEventSelection);
     
     if(isDebug) std::cout << __LINE__ << std::endl;
     
     if(isDebug) std::cout << __LINE__ << std::endl;
     
-    Int_t nEntries = (Int_t)lepTree_p->GetEntries();
+    int nEntries = (int)lepTree_p->GetEntries();
     //nEntries = 100;
-    Int_t entryDiv = ((Int_t)(nEntries/20));
+    int entryDiv = ((int)(nEntries/20));
     
     if(isDebug) std::cout << __LINE__ << std::endl;
     
-    for(Int_t entry = 0; entry < nEntries; entry++){
+    for(int entry = 0; entry < nEntries; entry++){
       if(isDebug) std::cout << __LINE__ << std::endl;
       
       if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
@@ -322,8 +333,13 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       hiTree_p->GetEntry(entry);
       hltTree_p->GetEntry(entry);
       pfTree_p->GetEntry(entry);
-
+      skimTree_p->GetEntry(entry);
+      
       if(!trig) continue;
+      if(!phfCoincFilter) continue;
+      if(!HBHENoiseFilterResult) continue;
+      if(!pcollisionEventSelection) continue;
+      if(!pprimaryVertexFilter) continue;
       
       if(TMath::Abs(vz_) > 15) continue;
       
@@ -331,19 +347,19 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
 
       int centEleId = getCentBinEleId((double)hiBin_/2.);
             
-      Float_t tempMuPt_[nLep];
-      Float_t tempMuPhi_[nLep];
-      Float_t tempMuEta_[nLep];
-      Int_t tempMuChg_[nLep];
-      Float_t tempMuIso_[nLep];     
+      float tempMuPt_[nLep];
+      float tempMuPhi_[nLep];
+      float tempMuEta_[nLep];
+      int tempMuChg_[nLep];
+      float tempMuIso_[nLep];     
  
-      Float_t tempElePt_[nLep];
-      Float_t tempElePhi_[nLep];
-      Float_t tempEleEta_[nLep];
-      Int_t tempEleChg_[nLep];
-      Float_t tempEleIso_[nLep];            
+      float tempElePt_[nLep];
+      float tempElePhi_[nLep];
+      float tempEleEta_[nLep];
+      int tempEleChg_[nLep];
+      float tempEleIso_[nLep];            
 
-      for(Int_t lepIter = 0; lepIter < nLep; lepIter++){
+      for(int lepIter = 0; lepIter < nLep; lepIter++){
 	lepPt_[lepIter] = -999;
 	lepPhi_[lepIter] = -999;
 	lepEta_[lepIter] = -999;
@@ -352,7 +368,7 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
         lepIso_[lepIter] = -999;
        }
        
-       for(Int_t lepIter = 0; lepIter < 2; lepIter++){
+       for(int lepIter = 0; lepIter < 2; lepIter++){
 	tempMuPt_[lepIter] = -999;
 	tempMuPhi_[lepIter] = -999;
 	tempMuEta_[lepIter] = -999;
@@ -376,13 +392,13 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       
       if(isDebug) std::cout << __LINE__ << std::endl;
       
-      const Int_t nMu = (Int_t)muPt_p->size();
+      const int nMu = (int)muPt_p->size();
       
-      const Int_t muTrkLayersCut = 5;
-      const Int_t muPixelHitsCut = 0;
+      const int muTrkLayersCut = 5;
+      const int muPixelHitsCut = 0;
 
       //Find two leading muons
-      for(Int_t muIter = 0; muIter < nMu; muIter++){
+      for(int muIter = 0; muIter < nMu; muIter++){
 	if(TMath::Abs(muEta_p->at(muIter)) > muEtaCut) continue;
 	if(muPt_p->at(muIter) < muPtCut) continue;
 	
@@ -417,12 +433,12 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       }
 
       //Find two leading electrons
-      const Int_t nEle = (Int_t)elePt_p->size();
-      for(Int_t eleIter = 0; eleIter < nEle; eleIter++){
+      const int nEle = (int)elePt_p->size();
+      for(int eleIter = 0; eleIter < nEle; eleIter++){
 	if(TMath::Abs(eleEta_p->at(eleIter)) > eleEtaCut) continue;
 	if(elePt_p->at(eleIter) < elePtCut) continue;	
         
-	Int_t eleEtaCutPos = 0;
+	int eleEtaCutPos = 0;
 	if(TMath::Abs(eleEta_p->at(eleIter)) > barrelEndcapEta) eleEtaCutPos = 1;
 
    	if(eleSigmaIEtaIEta_p->at(eleIter) > eleSigmaIEtaIEta_VetoCut[eleEtaCutPos][centEleId]) continue;
@@ -457,7 +473,7 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
 
       //store electrons and muons in out tree
       int lepIter = 0;
-      for(Int_t muIter = 0; muIter < 2; muIter++){
+      for(int muIter = 0; muIter < 2; muIter++){
         if(tempMuPt_[muIter]<0.) continue;
         lepPt_[lepIter] = tempMuPt_[muIter];
         lepPhi_[lepIter] = tempMuPhi_[muIter];
@@ -467,7 +483,7 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
         lepIso_[lepIter] = tempMuIso_[muIter];
         ++lepIter;
       }
-      for(Int_t eleIter = 0; eleIter < 2; eleIter++){
+      for(int eleIter = 0; eleIter < 2; eleIter++){
         if(tempElePt_[eleIter]<0.) continue;
         lepPt_[lepIter] = tempElePt_[eleIter];
         lepPhi_[lepIter] = tempElePhi_[eleIter];
@@ -481,7 +497,7 @@ void makeEMuSkim(const std::string outFileName = "", const std::string inFileNam
       nLep_ = lepIter;
 
       int njets = 0;
-      for(Int_t jetIter = 0; jetIter < nref; jetIter++){
+      for(int jetIter = 0; jetIter < nref; jetIter++){
         if(jtpt[jetIter]<jetPtCut) continue;
         jtPt_[njets]  = jtpt[jetIter];
         jtEta_[njets] = jteta[jetIter];
