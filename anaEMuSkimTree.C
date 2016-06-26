@@ -11,7 +11,7 @@
 const Float_t eleM = .000510998910;
 const Float_t muM = .1056583715;
 
-void anaSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName = "topEmuSkim_0.root") {
+void anaEMuSkimTree(TString strIn = "emuskim_0.root", const std::string outFileName = "topEmuSkim_0.root") {
 
   const int iDebug = 0;
   
