@@ -12,14 +12,13 @@
 
 const bool isDebug = false;
 
-const float jetPtCut = 25.;
+// Jet and lepton selection
+const float jetPtCut  = 25.;
 const float jetEtaCut = 3.;
+const int   minNJets  = 4;   //Note: you will have to change this to make control distributions for events with less than 4 jets
 
-const float lepPtCut = 15;
-
-// FIXME: Need to check lepton selections for PbPb
 const float muEtaCut = 2.1;
-const float muPtCut = 15;
+const float muPtCut  = 15.;
 
 const float muChi2NDFCut   = 10;
 const float muInnerD0Cut   = 0.2;
@@ -274,7 +273,7 @@ void makeMuJetsSkim(const std::string outFileName = "", const std::string inFile
       ++njets;
     }
     nJt_ = njets;
-    if(nJt_<4) continue; //need at least 2 b jets (t->Wb) and 2 light jets (W->qqbar)
+    if(nJt_<minNJets) continue; //need at least 2 b jets (t->Wb) and 2 light jets (W->qqbar)
     
     skimTree_p->Fill();
     
