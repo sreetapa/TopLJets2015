@@ -1,11 +1,12 @@
 #include "TFile.h"
+#include "TObjArray.h"
 #include "TDatime.h"
 #include "TNamed.h"
 #include "TMath.h"
 #include "TLorentzVector.h"
 #include "TChain.h"
 #include "LepJetsSkimTree.h"
-#include "drawMuJetsSkimControlPlots.C"
+//#include "drawMuJetsSkimControlPlots.C"
 #include <string>
 #include <vector>
 #include "ForestTreeHeaders/ForestMuons.h"
@@ -59,12 +60,17 @@ const int   muPixelHitsCut = 0;
 
 double calcLeptonIsolation(float lepPt, float lepEta, float lepPhi, std::vector<float> *pfPt, std::vector<float> *pfEta, std::vector<float> *pfPhi);
 
-void makeMuJetsSkim(const string PNGname,float Rlimit,bool PbPb,int number_of_files=1,int number_of_entries=300,bool createpng=false, bool isMC = false, const std::string outFileName = "test.root", const std::string inFileName ="root://eoscms//eos/cms/store/cmst3/group/hintt/mverweij/PbPb5TeV/data/HIEWQExo/crab_FilteredSingleMuHighPt_v2/160421_135925/mergePartial/HiForest_"){
-  if(!strcmp(inFileName.c_str(), "")){
-    std::cout << "No inputs specified. return" << std::endl;
-    return;
-  }
-  
+void makeMuJetsSkim(const string PNGname,
+		    float Rlimit,
+		    bool PbPb,	
+		    int number_of_entries=300,
+		    int start_entry=0,
+		    bool createpng=false, 
+		    bool isMC = false, 
+		    const std::string outFileName = "test.root", 
+		    TString inFileList ="root://eoscms//eos/cms/store/cmst3/group/hintt/mverweij/PbPb5TeV/data/HIEWQExo/crab_FilteredSingleMuHighPt_v2/160421_135925/mergePartial/HiForest_0.root")
+{
+
   if(PbPb)jetPtCut  = 50.; 
 
 
@@ -86,16 +92,14 @@ void makeMuJetsSkim(const string PNGname,float Rlimit,bool PbPb,int number_of_fi
  inFileNames_p->push_back(inFileName+to_string(num[i])+".root");
  }*/
 
- int begin_file=0;
- for(int i=begin_file;i<number_of_files+begin_file;++i){
- inFileNames_p->push_back(inFileName+to_string(i)+".root");
- }
- 
-
+  TObjArray *tx = inFileList.Tokenize(",");
+  for (Int_t i = 0; i < tx->GetEntries(); i++) 
+    inFileNames_p->push_back(tx->At(i)->GetName());
+     
   const int nFiles = (int)inFileNames_p->size();
-
   for(int fileIter = 0; fileIter < nFiles; fileIter++){
-    std::cout << "On file: " << fileIter+1 << "/" << nFiles << "  " << inFileNames_p->at(fileIter).c_str()  << std::endl;
+
+  std::cout << "On file: " << fileIter+1 << "/" << nFiles << "  " << inFileNames_p->at(fileIter).c_str()  << std::endl;
     lepTree_p->Add(inFileNames_p->at(fileIter).c_str());
     jetTree_p->Add(inFileNames_p->at(fileIter).c_str());
     hiTree_p->Add(inFileNames_p->at(fileIter).c_str());
@@ -227,18 +231,16 @@ void makeMuJetsSkim(const string PNGname,float Rlimit,bool PbPb,int number_of_fi
   skimAnaTree_p->SetBranchAddress("pcollisionEventSelection",&pcollisionEventSelection);
   }
 
-  int nEntries = (int)lepTree_p->GetEntries();
-
-  nEntries = number_of_entries;
-  int entryDiv = ((int)(nEntries/20));
+  if(number_of_entries<0) number_of_entries=(int)lepTree_p->GetEntries();
+  int entryDiv = ((int)(number_of_entries/20));
 
 /*Editted by Luuk*/
   //Used to count the percentage of decrease after eacht cut. Are printed at end of the script
   int t1(0), t2(0), t3(0), t4(0), t5(0), t6(0), t7(0), t8(0);
   int m1(0), m2(0), m3(0), m4(0), m5(0), m6(0), m7(0), m8(0), m9(0), m10(0), m11(0), m12(0), m13(0), m14(0);
 
-  for(int entry = 0; entry < nEntries; entry++){
-    if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
+  for(int entry = start_entry; entry < start_entry+number_of_entries; entry++){
+    if(entry%entryDiv == 0 && number_of_entries >= 10000) std::cout << "Entry # " << entry << "/" << number_of_entries << std::endl;
     if(entry%10000==0)cout<<entry<<endl;
     hiTree_p->GetEntry(entry);
     lepTree_p->GetEntry(entry);
@@ -540,13 +542,13 @@ void makeMuJetsSkim(const string PNGname,float Rlimit,bool PbPb,int number_of_fi
   outFile_p->cd();
   TNamed pathStr1("pathStr1", outFileName.c_str());
   pathStr1.Write("", TObject::kOverwrite);
-  TNamed pathStr2("pathStr2", inFileName.c_str());
+  TNamed pathStr2("pathStr2", inFileList.Data());
   pathStr2.Write("", TObject::kOverwrite);
   skimTree_p->Write("", TObject::kOverwrite);
   outFile_p->Close();
   delete outFile_p;
 
-  drawMuJetsSkimControlPlots(PNGname,outFileName,createpng);
+  //  drawMuJetsSkimControlPlots(PNGname,outFileName,createpng);
 }
 
 double calcLeptonIsolation(float lepPt, float lepEta, float lepPhi,
