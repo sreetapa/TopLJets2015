@@ -39,10 +39,9 @@ print '#events=',nEvts,'will be analysed in',nEvts/evtsPerJob,'jobs'
 os.system('mkdir -p '+outDir)
 for i in xrange(0,nJobs):
     startEvt=i*evtsPerJob
-    outFile='%s/%s/%s_%d.root'%(cwd,outDir,tag,startEvt)
-    localRun='root -b -q .L makeMuJetsSkim.C+(\\\"test\\\",%f,%d,%d,%d,false,false,\\\"%s\\\",\\\"%s\\\")'%(cone,isPbPb,evtsPerJob,startEvt,outFile,vecList)
-    cmd='bsub -q %s %s/scripts/wrapLocalAnalysisRun.sh \"%s\"' % (queue,cwd,localRun)
+    outFile='%s/%s/%s_%d.root'%(cwd,outDir,tag,startEvt)    
+    cmd='bsub -q %s %s/scripts/wrapLocalAnalysisRun.sh %f %d %d %d %s %s' % (queue,cwd,cone,isPbPb,evtsPerJob,startEvt,outFile,vecList)
+    #cmd='%s/scripts/wrapLocalAnalysisRun.sh %f %d %d %d %s %s' % (cwd,cone,isPbPb,evtsPerJob,startEvt,outFile,vecList)
     os.system(cmd)
-    raw_input()
-
+    
 print 'The output of the jobs will be named as %s_i.root and can be found in %s'%(tag,outDir)
