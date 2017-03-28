@@ -12,9 +12,9 @@
 using namespace std;
 
 //
-void makeJetsSkim(std::string outFileName = "", std::string inFileName = "", float jetPtCut = 25.,float jetEtaCut = 2.1, bool debug=false)
+void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPtCut = 25.,float jetEtaCut = 2.1, bool debug=false)
 {
-  if(inFileName.size()==0 || outFileName.size()==0)
+  if(inFileName=="" || outFileName=="")
     {
       cout << "Check inputs in=" << inFileName << " out=" << outFileName << endl;
       return;
@@ -26,9 +26,8 @@ void makeJetsSkim(std::string outFileName = "", std::string inFileName = "", flo
   //
   //prepare to read the trees
   //
-  std::vector<std::string>* inFileNames_p = new std::vector<std::string>;
-  TChain *jetTree = new TChain("akCs3PFJetAnalyzer/t");
-  jetTree->Add(inFileName.c_str());
+  TFile *fIn=TFile::Open(inFileName);
+  TTree *jetTree=(TTree *)fIn->Get("akCs3PFJetAnalyzer/t");
   const int maxJets = 500;
   int           nref;
   float         rawpt[maxJets],jtpt[maxJets],jteta[maxJets],jtphi[maxJets],jtm[maxJets],jtarea[maxJets];
@@ -60,8 +59,7 @@ void makeJetsSkim(std::string outFileName = "", std::string inFileName = "", flo
   jetTree->SetBranchAddress("refparton_flavorForB", refparton_flavorForB);
   jetTree->SetBranchAddress("refpt",refpt);
    
-  TChain *tkTree = new TChain("anaTrack/trackTree");
-  tkTree->Add(inFileName.c_str());
+  TTree *tkTree = (TTree *) fIn->Get("anaTrack/trackTree");
   Int_t nTrk;
   Float_t  trkPt[479],trkPtError[479],trkEta[479],trkPhi[479];
   UChar_t  trkNHit[479],trkNlayer[479],trkNdof[479];
@@ -85,8 +83,7 @@ void makeJetsSkim(std::string outFileName = "", std::string inFileName = "", flo
   tkTree->SetBranchAddress("trkDxy1", trkDxy1);
   tkTree->SetBranchAddress("trkDz1", trkDz1);
   
-  TChain *hiTree = new TChain("hiEvtAnalyzer/HiTree");
-  hiTree->Add(inFileName.c_str());
+  TTree *hiTree = (TTree *) fIn->Get("hiEvtAnalyzer/HiTree");
   int hiBin;
   float vz;
   hiTree->SetBranchStatus("*", 0);
@@ -94,12 +91,11 @@ void makeJetsSkim(std::string outFileName = "", std::string inFileName = "", flo
   hiTree->SetBranchStatus("vz", 1);
   hiTree->SetBranchAddress("hiBin", &hiBin);
   hiTree->SetBranchAddress("vz", &vz);
-
   
   //
   // prepare the output tree
   //
-  TFile* outFile_p = new TFile(outFileName.c_str(), "RECREATE");
+  TFile* outFile_p = new TFile(outFileName, "RECREATE");
   TTree *skimTree = new TTree("jets", "jets");
   skimTree->SetDirectory(outFile_p);
   std::map<TString,float> skimVars;
@@ -207,17 +203,9 @@ void makeJetsSkim(std::string outFileName = "", std::string inFileName = "", flo
       }
     }
 
-  cout <<__LINE__ << endl;
+  fIn->Close();
   outFile_p->cd();
-  cout <<__LINE__ << endl;
   skimTree->SetDirectory(outFile_p);
   skimTree->Write();
-  cout <<__LINE__ << endl;
   outFile_p->Close();
-  cout <<__LINE__ << endl;
-  delete outFile_p;
-  jetTree->Delete();
-  hiTree->Delete();
-  tkTree->Delete();
-  cout <<__LINE__ << endl;
 }
