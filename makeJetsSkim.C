@@ -12,6 +12,30 @@
 using namespace std;
 
 //
+float ptRel(TLorentzVector &jet, TLorentzVector &part)
+{  
+  float lj_x = jet.Px();
+  float lj_y = jet.Py();
+  float lj_z = jet.Pz();
+    
+  // absolute values squared
+  float lj2  = lj_x*lj_x+lj_y*lj_y+lj_z*lj_z;
+  float lep2 = part.X()*part.X()+part.Y()*part.Y()+part.Z()*part.Z();
+  
+  // projection vec(mu) to lepjet axis
+  float lepXlj = part.X()*lj_x+part.Y()*lj_y+part.Z()*lj_z;
+  
+  // absolute value squared and normalized
+  float pLrel2 = lepXlj*lepXlj/lj2;
+  
+  // lep2 = pTrel2 + pLrel2
+  float pTrel2 = lep2-pLrel2;
+  
+  return (pTrel2 > 0) ? std::sqrt(pTrel2) : 0.0;
+}
+
+
+//
 void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPtCut = 25.,float jetEtaCut = 2.1, bool debug=false)
 {
   if(inFileName=="" || outFileName=="")
@@ -28,14 +52,16 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
   //
   TFile *fIn=TFile::Open(inFileName);
   TTree *jetTree=(TTree *)fIn->Get("akCs3PFJetAnalyzer/t");
-  const int maxJets = 500;
   int           nref;
-  float         rawpt[maxJets],jtpt[maxJets],jteta[maxJets],jtphi[maxJets],jtm[maxJets],jtarea[maxJets];
-  float         jttau1[maxJets],jttau2[maxJets],jttau3[maxJets],discr_csvV1[maxJets],discr_csvV2[maxJets];
-  int           svtxntrk[maxJets];
-  float         svtxdl[maxJets],svtxdls[maxJets],svtxdl2d[maxJets],svtxdls2d[maxJets],svtxm[maxJets],svtxpt[maxJets],svtxmcorr[maxJets];
-  int          refparton_flavor[maxJets],refparton_flavorForB[maxJets];
-  float  refpt[maxJets];
+  float         rawpt[60],jtpt[60],jteta[60],jtphi[60],jtm[60],jtarea[60];
+  float         jttau1[60],jttau2[60],jttau3[60],discr_csvV1[60],discr_csvV2[60];
+  int           svtxntrk[60];
+  float         svtxdl[60],svtxdls[60],svtxdl2d[60],svtxdls2d[60],svtxm[60],svtxpt[60],svtxeta[60],svtxphi[60],svtxmcorr[60];
+  float svtxTrkSumChi2[60];
+  int svtxTrkNetCharge[60],svtxNtrkInCone[60];
+  int          refparton_flavor[60],refparton_flavorForB[60];
+  float  refpt[60];
+  Float_t mue[60],mupt[60],mudr[60],muptrel[60];
   jetTree->SetBranchAddress("nref", &nref);
   jetTree->SetBranchAddress("rawpt", rawpt);
   jetTree->SetBranchAddress("jtpt", jtpt);
@@ -54,18 +80,27 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
   jetTree->SetBranchAddress("svtxdls2d", svtxdls2d);
   jetTree->SetBranchAddress("svtxm", svtxm);
   jetTree->SetBranchAddress("svtxpt", svtxpt);
+  jetTree->SetBranchAddress("svtxeta", svtxeta);
+  jetTree->SetBranchAddress("svtxphi", svtxphi);
   jetTree->SetBranchAddress("svtxmcorr", svtxmcorr);
+  jetTree->SetBranchAddress("svtxTrkSumChi2", svtxTrkSumChi2);
+  jetTree->SetBranchAddress("svtxTrkNetCharge", svtxTrkNetCharge);
+  jetTree->SetBranchAddress("svtxNtrkInCone", svtxNtrkInCone);
   jetTree->SetBranchAddress("refparton_flavor", refparton_flavor);
   jetTree->SetBranchAddress("refparton_flavorForB", refparton_flavorForB);
   jetTree->SetBranchAddress("refpt",refpt);
-   
+  jetTree->SetBranchAddress("mupt", mupt);
+  jetTree->SetBranchAddress("mue", mue);
+  jetTree->SetBranchAddress("mudr", mudr);
+  jetTree->SetBranchAddress("muptrel", muptrel);
+  
   TTree *tkTree = (TTree *) fIn->Get("anaTrack/trackTree");
   Int_t nTrk;
-  Float_t  trkPt[479],trkPtError[479],trkEta[479],trkPhi[479];
-  UChar_t  trkNHit[479],trkNlayer[479],trkNdof[479];
-  Float_t  trkDxy1[479],trkDz1[479],trkChi2[479];
-  Float_t  trkDxyOverDxyError[479],trkDzOverDzError[479];
-  Bool_t   highPurity[479],tight[479],loose[479];
+  Float_t  trkPt[5000],trkPtError[5000],trkEta[5000],trkPhi[5000];
+  UChar_t  trkNHit[5000],trkNlayer[5000],trkNdof[5000];
+  Float_t  trkDxy1[5000],trkDz1[5000],trkChi2[5000];
+  Float_t  trkDxyOverDxyError[5000],trkDzOverDzError[5000];
+  Bool_t   highPurity[5000],tight[5000],loose[5000];
   tkTree->SetBranchAddress("nTrk", &nTrk);
   tkTree->SetBranchAddress("trkPt", trkPt);
   tkTree->SetBranchAddress("trkPtError", trkPtError);
@@ -82,7 +117,7 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
   tkTree->SetBranchAddress("trkNdof", trkNdof);
   tkTree->SetBranchAddress("trkDxy1", trkDxy1);
   tkTree->SetBranchAddress("trkDz1", trkDz1);
-  
+
   TTree *hiTree = (TTree *) fIn->Get("hiEvtAnalyzer/HiTree");
   int hiBin;
   float vz;
@@ -104,8 +139,9 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
 		      "jet_tau1","jet_tau2","jet_tau3",
 		      "jet_csvV1","jet_csvV2",
 		      "jet_svntrk","jet_svdl","jet_svdls","jet_svdl2d","jet_svdls2d",
-		      "jet_svpt","jet_svm","jet_svmcorr",
-		      "jet_flav","jet_flavForB","hiBin"};
+		      "jet_svpt","jet_svm","jet_svmcorr", "jet_sve2e","jet_svptrel",
+		      "jet_mue2jete",  "jet_mupt", "jet_muptrel", "jet_mudr",
+		      "isB", "isC", "isUDSG", "isUnmatched"};
   for(auto s : varNames)
     {
       skimVars[s]=0.;
@@ -113,9 +149,10 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
     } 
   
   int n_Cpfcand;
-  float Cpfcan_pt[5000],Cpfcan_erel[5000],Cpfcan_phirel[5000],Cpfcan_etarel[5000],Cpfcan_deltaR[5000],Cpfcan_dxy[5000],Cpfcan_dxysig[5000],Cpfcan_dz[5000],Cpfcan_dzsig[5000],Cpfcan_chi2[5000],Cpfcan_nlayer[5000],Cpfcan_quality[5000];
+  float Cpfcan_pt[5000],Cpfcan_dpt2pt[5000],Cpfcan_erel[5000],Cpfcan_phirel[5000],Cpfcan_etarel[5000],Cpfcan_deltaR[5000],Cpfcan_dxy[5000],Cpfcan_dxysig[5000],Cpfcan_dz[5000],Cpfcan_dzsig[5000],Cpfcan_chi2[5000],Cpfcan_nlayer[5000],Cpfcan_quality[5000],Cpfcan_ptrel[5000];
   skimTree->Branch("n_Cpfcand", &n_Cpfcand,"n_Cpfcand/i");
   skimTree->Branch("Cpfcan_pt", Cpfcan_pt,"Cpfcan_pt[n_Cpfcand]/f");
+  skimTree->Branch("Cpfcan_dpt2pt", Cpfcan_dpt2pt,"Cpfcan_dpt2pt[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_erel", Cpfcan_erel,"Cpfcan_erel[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_phirel",Cpfcan_phirel,"Cpfcan_phirel[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_etarel",Cpfcan_etarel,"Cpfcan_etarel[n_Cpfcand]/f");
@@ -125,6 +162,7 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
   skimTree->Branch("Cpfcan_dz",Cpfcan_dz,"Cpfcan_dz[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_dzsig",Cpfcan_dzsig,"Cpfcan_dzsig[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_chi2",Cpfcan_chi2,"Cpfcan_chi2[n_Cpfcand]/f");
+  skimTree->Branch("Cpfcan_ptrel",Cpfcan_ptrel,"Cpfcan_ptrel[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_nlayer",Cpfcan_nlayer,"Cpfcan_nlayer[n_Cpfcand]/f");
   skimTree->Branch("Cpfcan_quality",Cpfcan_quality,"Cpfcan_quality[n_Cpfcand]/f");
 
@@ -146,10 +184,14 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
       for(int jetIter = 0; jetIter < nref; jetIter++){
         if(jtpt[jetIter]<jetPtCut) continue;
 	if(fabs(jteta[jetIter])>jetEtaCut) continue;
+
+	TLorentzVector jP4(0,0,0,0);
+	jP4.SetPtEtaPhiM( jtpt[jetIter], jteta[jetIter], jtphi[jetIter], jtm[jetIter] );
 	
 	skimVars["jet_rawpt"]   = rawpt[jetIter];
 	skimVars["jet_pt"]      = jtpt[jetIter];
 	skimVars["jet_eta"]     = jteta[jetIter];
+	skimVars["jet_phi"]     = jtphi[jetIter];
 	skimVars["jet_m"]       = jtm[jetIter];
 	skimVars["jet_tau1"]    = jttau1[jetIter];
 	skimVars["jet_tau2"]    = jttau2[jetIter];
@@ -162,14 +204,26 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
 	skimVars["jet_svdl2d"]  = svtxdl2d[jetIter];
 	skimVars["jet_svdls2d"] = svtxdls2d[jetIter];
 	skimVars["jet_svpt"]    = svtxpt[jetIter];	
+	TLorentzVector svtxP4(0,0,0,0);
+	svtxP4.SetPtEtaPhiM(svtxpt[jetIter],svtxeta[jetIter],svtxphi[jetIter],svtxm[jetIter]);
+	skimVars["jet_sve2e"] = svtxP4.E()/jP4.E();
+	skimVars["jet_svptrel"] = ptRel(jP4,svtxP4);
 	skimVars["jet_svm"]     = svtxm[jetIter];
 	skimVars["jet_svmcorr"] = svtxmcorr[jetIter];
-	skimVars["jet_flav"]    = refparton_flavor[jetIter];
-	skimVars["jet_flavForB"] = refparton_flavorForB[jetIter];
-	skimVars["gen_pt"]      = refpt[jetIter];
+	skimVars["jet_svtxTrkNetCharge"] = svtxTrkNetCharge[jetIter];
+	skimVars["jet_svtrkSumChi2"] = svtxTrkSumChi2[jetIter];
+	skimVars["jet_svtrkInCone"] = svtxNtrkInCone[jetIter];
+	skimVars["jet_mue2jete"]    = mue[jetIter]/jP4.E();
+	skimVars["jet_mupt"]        = mupt[jetIter] ;
+	skimVars["jet_muptrel"]     = muptrel[jetIter];
+	skimVars["jet_mudr"]        = mudr[jetIter];
+	int absid( abs(refparton_flavorForB[jetIter]) );
+	skimVars["isB"]             = absid==5 ? 1. : 0.;
+	skimVars["isC"]             = absid==4 ? 1. : 0.;
+	skimVars["isUnmatched"]     = absid==0 ? 1. : 0.;
+	skimVars["isUDSG"]          = (absid!=5 && absid!=4 && absid!=0);
+	skimVars["gen_pt"]          = refpt[jetIter];
 
-	TLorentzVector jP4(0,0,0,0);
-	jP4.SetPtEtaPhiM( jtpt[jetIter], jteta[jetIter], jtphi[jetIter], jtm[jetIter] );
 	float etasign = jteta[jetIter] <0 ? -1. : 1.;
 	
 	n_Cpfcand=0;
@@ -184,9 +238,11 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
 	    TLorentzVector tkP4(0,0,0,0);
 	    tkP4.SetPtEtaPhiM( trkPt[ipf], trkEta[ipf], trkPhi[ipf], 0.139);
 	    Cpfcan_pt[n_Cpfcand]=tkP4.Pt();
+	    Cpfcan_dpt2pt[n_Cpfcand]=trkPtError[ipf]/tkP4.Pt();
 	    Cpfcan_erel[n_Cpfcand]=tkP4.E()/jP4.E();
 	    Cpfcan_phirel[n_Cpfcand]=phirel;
 	    Cpfcan_etarel[n_Cpfcand]=etarel;
+	    Cpfcan_ptrel[n_Cpfcand]=ptRel(jP4,tkP4);
 	    Cpfcan_deltaR[n_Cpfcand]=dR;
 	    Cpfcan_dxy[n_Cpfcand]=trkDxy1[ipf];
 	    Cpfcan_dxysig[n_Cpfcand]=trkDxyOverDxyError[ipf];
@@ -208,4 +264,6 @@ void makeJetsSkim(TString outFileName = "", TString inFileName = "", float jetPt
   skimTree->SetDirectory(outFile_p);
   skimTree->Write();
   outFile_p->Close();
+
+  cout << "[makeJetsSkim] all done" << endl;
 }
