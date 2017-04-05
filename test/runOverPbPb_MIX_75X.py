@@ -7,6 +7,22 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process('HiForest')
 process.options = cms.untracked.PSet()
 
+from FWCore.ParameterSet.VarParsing import VarParsing
+options = VarParsing ('python')
+options.register('outFilename', 
+                 'HiForestAOD.root',
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.string,
+                 "Output file name"
+                 )
+options.register('inputFile', 
+                 "/store/himc/HINPbPbWinter16DR/Pythia6_bJet170_pp502_Hydjet_MB/AODSIM/75X_mcRun2_HeavyIon_v13-v1/50000/00A14813-B70E-E611-8C4E-02163E014702.root",
+                 VarParsing.multiplicity.singleton,
+                 VarParsing.varType.string,
+                 "input file to process"
+                 )
+options.parseArguments()
+
 #####################################################################################
 # HiForest labelling info
 #####################################################################################
@@ -25,7 +41,7 @@ process.HiForest.HiForestVersion = cms.string(version)
 
 process.source = cms.Source("PoolSource",
                             duplicateCheckMode = cms.untracked.string("noDuplicateCheck"),
-                            fileNames = cms.untracked.vstring("/store/himc/HINPbPbWinter16DR/Pythia6_bJet170_pp502_Hydjet_MB/AODSIM/75X_mcRun2_HeavyIon_v13-v1/50000/00A14813-B70E-E611-8C4E-02163E014702.root")
+                            fileNames = cms.untracked.vstring(options.inputFile)
                             )
 
 # Number of events we want to process, -1 = all events
@@ -72,7 +88,7 @@ process.centralityBin.nonDefaultGlauberModel = cms.string("HydjetCymbal5Ev8")
 #####################################################################################
 
 process.TFileService = cms.Service("TFileService",
-                                   fileName=cms.string("HiForestAOD.root"))
+                                   fileName=cms.string(options.outFilename))
 
 #####################################################################################
 # Additional Reconstruction and Analysis: Main Body
