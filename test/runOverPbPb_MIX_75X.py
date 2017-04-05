@@ -95,6 +95,10 @@ process.load('HeavyIonsAnalysis.JetAnalysis.FullJetSequence_puLimitedPbPb')
 # replace above with this one for JEC:
 #process.load('HeavyIonsAnalysis.JetAnalysis.FullJetSequence_JECPbPb')
 
+process.akCs3PFJetAnalyzer.doLifeTimeTagging       = cms.untracked.bool(True)
+process.akCs3PFJetAnalyzer.doLifeTimeTaggingExtras = cms.untracked.bool(True)
+process.akCs3PFJetAnalyzer.doExtraCTagging         = cms.untracked.bool(True)
+
 #rho analyzer
 process.load('HeavyIonsAnalysis.JetAnalysis.hiFJRhoAnalyzer_cff')
 
@@ -179,6 +183,21 @@ process.CSVscikitTags.weightFile=cms.FileInPath('HeavyIonsAnalysis/JetAnalysis/d
 # Main analysis list
 #########################
 
+process.myJetSequence = cms.Sequence(
+    process.PFTowers + 
+    process.kt2PFJets +
+    process.kt4PFJets +
+    process.hiFJRhoProducer +
+    process.hiFJGridEmptyAreaCalculator + 
+    process.akPu4PFJetsNoLimits +
+    process.akPu3PFJets +
+    process.akCs3PFJets +
+    process.highPurityTracks +
+    process.offlinePrimaryVertices +
+    process.akPu3PFJetSequence +
+    process.akCs3PFJetSequence
+)
+
 process.ana_step = cms.Path(
     # Temporary disactivation - until we have DIGI & RECO in CMSSW_7_5_7_patch4
     # process.mixAnalyzer *
@@ -189,12 +208,13 @@ process.ana_step = cms.Path(
     *process.HiGenParticleAna
     *process.akHiGenJets 
     +process.hiSignalGenFilters 
-    +process.jetSequences 
+    +process.myJetSequence
+  #  +process.jetSequences 
   #  +process.hiFJRhoAnalyzer 
   #+  process.ggHiNtuplizer 
   # + process.ggHiNtuplizerGED 
   #  + process.pfcandAnalyzer
-   + process.pfcandAnalyzerCS 
+  # + process.pfcandAnalyzerCS 
   # + process.HiForest +
     + process.trackSequencesPbPb 
   # + process.tupelPatSequence
