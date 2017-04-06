@@ -33,13 +33,13 @@ export X509_USER_PROXY=~/private/cur_proxy
 WORKDIR=`pwd`
 
 echo "Working directory is ${WORKDIR}"
-cd /afs/cern.ch/user/p/psilva/scratch0/CMSSW_7_5_8_patch3/src/topskim
+cd /afs/cern.ch/user/p/psilva/scratch0/CMSSW_7_5_8_patch3/src
 eval `scram r -sh`
 cd ${WORKDIR}
 echo "Forestizing ${input}"
 cmsRun ${CMSSW_BASE}/src/topskim/test/runOverPbPb_MIX_75X.py inputFile=${input} outFilename=hif_${outfile}
 echo "Making jet tree out of HIForest"
-root -l ${CMSSW_BASE}/src/topskim/makeJetsSkim.C+\(\"${outfile}\",\"hif_${outfile}\"\) && .q;
+root -b -q ${CMSSW_BASE}/src/topskim/makeJetsSkim.C+\(\"${outfile}\",\"hif_${outfile}\"\) && .q;
 echo "Moving result to ${outdir}"
 rm hif_${outfile}
 xrdcp ${outfile} root://eoscms//eos/cms/${outdir}/${outfile}

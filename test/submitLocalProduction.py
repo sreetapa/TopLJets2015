@@ -39,12 +39,13 @@ def main():
             scriptArgs='-i %s -o JetTree_%d.root -s %s'%(fileList[i],i,outDir)            
             condorScript='%s/job_%d.sh'%(FARMDIR,i)
             with open(condorScript,'w') as f:
+                  #f.write('use_x509userproxy = true\n')
                   f.write('executable            = %s\n'%script)
                   f.write('arguments             = %s\n'%scriptArgs)
                   f.write('output                = %s/job_%d.$(ClusterId).$(ProcId).out\n'%(FARMDIR,i))
                   f.write('error                 = %s/job_%d.$(ClusterId).$(ProcId).err\n'%(FARMDIR,i))
                   f.write('log                   = %s/job_%d.$(ClusterId).$(ProcId).log\n'%(FARMDIR,i))
-                  f.write('+JobFlavour = "%s"\n'%opt.queue)
+                  #f.write('+JobFlavour = "%s"\n'%opt.queue)
                   f.write('queue\n')
 
             os.system('condor_submit %s'%condorScript)
