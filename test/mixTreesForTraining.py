@@ -3,6 +3,7 @@
 import ROOT
 import os,sys
 import random
+import optparse
 
 OUTSTORE='/store/cmst3/user/psilva/Mix_Pythia6_bJet_pp502_Hydjet_MB'
 
@@ -39,31 +40,52 @@ def mixJets(jets,nevts,baseOutput):
 """
 def main():
 
-    if len(sys.argv)<2:
-        print 'mixTreesForTraining.py eventsPerFile dir1 dir2 ...'
-        print '(check hardcoded OUTSTORE in the file)'
-        sys.exit(0)
+    usage = 'usage: %prog [options] {dir,file}1 {dir,file}2'
+    parser = optparse.OptionParser(usage)
+    parser.add_option('-n', '--nevts',   dest='nevts',    help='number of events per file [%default]',  default=200000, type='int')
+    parser.add_option('-c', '--counter', dest='counter',  help='counter tag [%default]',                default=0,      type='int')
+    parser.add_option(      '--sub',     dest='sub',      help='submit [%default]',                     default=False,  action='store_true')
+    (opt, args) = parser.parse_args()
+    
 
-    nevts    = int(sys.argv[1])
-    fileList = [os.path.join(baseDir,f) for baseDir in sys.argv[2:] for f in os.listdir(baseDir)]
-    random.shuffle(fileList)
+    #if arguments contain already ROOT files, just mix them
+    if '.root' in args[0]:
+        jets=ROOT.TChain('jets')
+        for f in args: jets.AddFile( f )
+        print 'Will mix jets from %d files and %d events'%(len(args),jets.GetEntries())
+        mixJets(jets=jets, nevts=opt.nevts,baseOutput='/tmp/MixedJets_%d'%opt.counter)
 
-    print 'Found %d files to mix'%len(fileList)
+    #otherwise create the files list and submit to the batch
+    else:
+        fileList = [os.path.join(x,f) for x in args for f in os.listdir(x)]
+        random.shuffle(fileList)
+        print 'Found %d files to mix'%len(fileList)
 
-    mixCounter,fCounter=0,0
-    jets=ROOT.TChain('jets')
-    while len(fileList)>0:
-        jets.AddFile( fileList.pop() )
-        fCounter+=1
-        if jets.GetEntries()>nevts: 
-            print 'Calling mixJets with %d jets to mix in chunks of %d, from %d files'%(jets.GetEntries(),nevts,fCounter)
-            mixJets(jets=jets,
-                    nevts=nevts,
-                    baseOutput='/tmp/psilva/MixedJets_%d'%mixCounter)
-            mixCounter+=1
-            fCounter=0
-            jets.Reset()
-            print 'Done, jet chain has now %d files'%jets.GetListOfFiles().GetEntriesFast()
+        mixCounter=0
+        jets=ROOT.TChain('jets')
+        mixFileList=[]
+        while len(fileList)>0:
+            url=fileList.pop()
+            mixFileList.append( url )
+            jets.AddFile( url )
+
+            if jets.GetEntries()>opt.nevts: 
+
+                scriptName='mixscript_%d.sh'%mixCounter
+                with open(scriptName,'w') as fout:
+                    fout.write('#!/bin/bash\n')
+                    fout.write('cd %s/src/topskim/test/\n'%os.environ['CMSSW_BASE'])
+                    fout.write('eval `scram r -sh`\n')
+                    fout.write('python ${CMSSW_BASE}/src/topskim/test/mixTreesForTraining.py --nevts %d --counter %d %s\n'%(opt.nevts,mixCounter,' '.join(mixFileList)))
+
+                if opt.sub:
+                    os.system('chmod u+x %s'%scriptName)
+                    os.system('bsub -q 2nd %s/src/topskim/test/%s'%(os.environ['CMSSW_BASE'],scriptName))                    
+
+                mixCounter+=1
+                mixFileList=[]
+                jets.Reset()
+
         
 
 
