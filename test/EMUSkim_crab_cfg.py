@@ -8,7 +8,7 @@ config.General.workArea = "grid"
 config.General.transferOutputs=True
 
 config.section_("JobType")
-config.JobType.pluginName = "Analysis"
+config.JobType.pluginName = "HiForest"
 config.JobType.psetName = "/afs/cern.ch/user/p/psilva/work/PbPb/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/test/runForestAOD_pponAA_DATA_103X_PR.py"
 config.JobType.disableAutomaticOutputCollection = False
 config.JobType.pyCfgParams = ['isPP=False','maxEvents=-1','outputFile=HiForest.root']

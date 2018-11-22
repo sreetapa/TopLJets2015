@@ -13,6 +13,7 @@
 #include "ForestTreeHeaders/ElectronIdCriteria.h"
 #include "ForestTreeHeaders/ForestElectrons.h"
 #include "ForestTreeHeaders/ForestMuons.h"
+#include "ForestTreeHeaders/HistTool.h"
 
 const bool isDebug = true;
 
@@ -21,6 +22,7 @@ const float jetEtaCut = 2.4;
 const float lepPtCut  = 20.;
 const float lepEtaCut = 2.1;
 const float barrelEndcapEta[2]={1.4442,1.5660};
+const float csvWP = 0.8838;
 
 void simpleTT2L(const std::string outFileName = "", const std::string inFileName = "", bool isMC = false, bool isPP=true)
 {
@@ -31,7 +33,17 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
 
   if(isDebug) std::cout << __LINE__ << std::endl;
 
-  //TFile* outFile_p = new TFile(outFileName.c_str(), "RECREATE");
+  HistTool ht;
+  ht.addHist("lpt",     new TH1F("lpt",    ";Lepton transverse momentum [GeV];Events",25,20,200));
+  ht.addHist("leta",    new TH1F("leta",   ";Lepton pseudo-rapidity;Events",20,0,2.5));
+  ht.addHist("mll",     new TH1F("mll",    ";Dilepton invariant mass [GeV];Events",25,20,200));
+  ht.addHist("dphill",  new TH1F("dphill", ";#Delta#phi(l,l');Events",25,0,6));
+  ht.addHist("njets",   new TH1F("njets",  ";Jet multiplicity;Events",5,0,5));
+  ht.addHist("nbjets",  new TH1F("nbjets", ";b-jet multiplicity;Events",5,0,5));
+  ht.addHist("jpt",     new TH1F("jpt",    ";Jet transverse momentum [GeV];Events",25,20,200));
+  ht.addHist("jeta",    new TH1F("jeta",   ";Jet pseudo-rapidity;Events",20,0,2.5));
+  ht.addHist("jcsv",    new TH1F("jcsv",   ";CSVv2;Events",25,-1,1));
+
 
   std::vector<std::string>* inFileNames_p = new std::vector<std::string>;
   inFileNames_p->push_back(inFileName);
@@ -39,7 +51,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   setEleIdCuts();
   
   TChain *lepTree_p     = new TChain(isPP ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
-  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer"        : "akCs2PFJetAnalyzer/t");
+  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t"      : "akCs2PFJetAnalyzer/t");
   TChain *hiTree_p      = new TChain("hiEvtAnalyzer/HiTree");
   TChain *hltTree_p     = new TChain("hltanalysis/HltTree");
   TChain *skimAnaTree_p = new TChain("skimanalysis/HltTree");
@@ -96,20 +108,20 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   float         jteta[maxJets];
   float         jtphi[maxJets];
   float         jtm[maxJets];
-  float         discr_csvV1[maxJets];
+  float         discr_csv[maxJets];
   jetTree_p->SetBranchStatus("*", 0);
   jetTree_p->SetBranchStatus("nref", 1);
   jetTree_p->SetBranchStatus("jtpt", 1);
   jetTree_p->SetBranchStatus("jtphi", 1);
   jetTree_p->SetBranchStatus("jteta", 1);
   jetTree_p->SetBranchStatus("jtm", 1);
-  jetTree_p->SetBranchStatus("discr_csvV1", 1);
+  jetTree_p->SetBranchStatus("discr_csvV2", 1);
   jetTree_p->SetBranchAddress("nref", &nref);
   jetTree_p->SetBranchAddress("jtpt", jtpt);
   jetTree_p->SetBranchAddress("jtphi", jtphi);
   jetTree_p->SetBranchAddress("jteta", jteta);
   jetTree_p->SetBranchAddress("jtm", jtm);
-  jetTree_p->SetBranchAddress("discr_csvV1", discr_csvV1);
+  jetTree_p->SetBranchAddress("discr_csvV2", discr_csv);
   
   UInt_t run, lumi;
   ULong64_t evt;
@@ -159,11 +171,12 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-    
+
     lepTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);    
     hltTree_p->GetEntry(entry);
     skimAnaTree_p->GetEntry(entry);
+    continue;
     
     int trig=emtrig+eetrig;
     if(trig==0) continue;
@@ -254,9 +267,18 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     }    
     if(!isZee && !isEM) continue;
 
- 
+    TString baseCat(isZee ? "zee" : "em");
+    float wgt(1.0);
+    ht.fill( "lpt",     selLeps[0].Pt(),                       wgt, baseCat+"l1");
+    ht.fill( "lpt",     selLeps[1].Pt(),                       wgt, baseCat+"l2");
+    ht.fill( "leta",    fabs(selLeps[0].Et()),                 wgt, baseCat+"l1");
+    ht.fill( "leta",    fabs(selLeps[1].Eta()),                wgt, baseCat+"l2");
+    ht.fill( "dphill",  fabs(selLeps[0].DeltaPhi(selLeps[1])), wgt, baseCat);
+    ht.fill( "mll",     (selLeps[0]+selLeps[1]).M(),           wgt, baseCat);
+    ht.fill( "ptll",    (selLeps[0]+selLeps[1]).Pt(),          wgt, baseCat);
+
     std::vector<TLorentzVector> selJets;
-    int njets = 0;
+    int njets(0),nbjets(0);
     for(int jetIter = 0; jetIter < nref; jetIter++){
       if(jtpt[jetIter]<jetPtCut) continue;
       if(fabs(jteta[jetIter])>jetEtaCut) continue;
@@ -265,9 +287,29 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       if(jp4.DeltaR(selLeps[0])<0.4 || jp4.DeltaR(selLeps[1])<0.4) continue;
       selJets.push_back(jp4);
       ++njets;
+      ht.fill( "jpt",   jtpt[jetIter],        wgt, baseCat);
+      ht.fill( "jeta", jteta[jetIter],        wgt, baseCat);
+      ht.fill( "jcsv",   discr_csv[jetIter],  wgt, baseCat);
+      if(discr_csv[jetIter]>csvWP) ++nbjets;
     }
     
-    cout << isZee << " " << isEM <<  " " << njets << endl;
+    ht.fill( "njets",   njets,   wgt, baseCat);
+    ht.fill( "nbjets",  nbjets,  wgt, baseCat);
+  }
+
+  //save histos to file  
+  if(outFileName!=""){
+    TFile *fOut=TFile::Open(outFileName.c_str(),"RECREATE");
+    fOut->cd();
+    for (auto& it : ht.getPlots())  { 
+      if(it.second->GetEntries()==0) continue;
+      it.second->SetDirectory(fOut); it.second->Write(); 
+    }
+    for (auto& it : ht.get2dPlots())  { 
+      if(it.second->GetEntries()==0) continue;
+      it.second->SetDirectory(fOut); it.second->Write(); 
+    }
+    fOut->Close();
   }
 
   return;
