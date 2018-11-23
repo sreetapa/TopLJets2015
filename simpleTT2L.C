@@ -24,7 +24,7 @@ const float lepEtaCut = 2.1;
 const float barrelEndcapEta[2]={1.4442,1.5660};
 const float csvWP = 0.8838;
 
-void simpleTT2L(const std::string outFileName = "", const std::string inFileName = "", bool isMC = false, bool isPP=true)
+void simpleTT2L(const std::string outFileName = "", const std::string inFileName = "", bool isMC = false, bool isPP=true,bool doSameSign=false)
 {
   if(!strcmp(inFileName.c_str(), "")){
     std::cout << "No inputs specified. return" << std::endl;
@@ -52,7 +52,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   setEleIdCuts();
   
   TChain *lepTree_p     = new TChain(isPP ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
-  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t"      : "akCs2PFJetAnalyzer/t");
+  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t"      : "akPu4CaloJetAnalyzer/t");
   TChain *hiTree_p      = new TChain("hiEvtAnalyzer/HiTree");
   TChain *hltTree_p     = new TChain("hltanalysis/HltTree");
   TChain *skimAnaTree_p = new TChain("skimanalysis/HltTree");
@@ -110,6 +110,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   float         jtphi[maxJets];
   float         jtm[maxJets];
   float         discr_csv[maxJets];
+  int           trackN[maxJets];
   jetTree_p->SetBranchStatus("*", 0);
   jetTree_p->SetBranchStatus("nref", 1);
   jetTree_p->SetBranchStatus("jtpt", 1);
@@ -117,12 +118,14 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   jetTree_p->SetBranchStatus("jteta", 1);
   jetTree_p->SetBranchStatus("jtm", 1);
   jetTree_p->SetBranchStatus("discr_csvV2", 1);
+  jetTree_p->SetBranchStatus("trackN", 1);
   jetTree_p->SetBranchAddress("nref", &nref);
   jetTree_p->SetBranchAddress("jtpt", jtpt);
   jetTree_p->SetBranchAddress("jtphi", jtphi);
   jetTree_p->SetBranchAddress("jteta", jteta);
   jetTree_p->SetBranchAddress("jtm", jtm);
   jetTree_p->SetBranchAddress("discr_csvV2", discr_csv);
+  jetTree_p->SetBranchAddress("trackN", trackN);
   
   UInt_t run, lumi;
   ULong64_t evt;
@@ -145,17 +148,19 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   hiTree_p->SetBranchAddress("vz", &vz);
   hiTree_p->SetBranchAddress("weight",&weight);
 
-  int eetrig,emtrig;
+  int eetrig(0),emtrig(1);
   if(isPP){
     hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIL3Mu20_v1",&emtrig);
     hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v1",&eetrig);
   }else{
-    hltTree_p->SetBranchStatus("HLT_HIL1Mu5Eta2p5_Ele20Gsf_v",1);
-    hltTree_p->SetBranchAddress("HLT_HIL1Mu5Eta2p5_Ele20Gsf_v",&emtrig);
-    hltTree_p->SetBranchStatus("HLT_PADoublePhoton15_Eta3p1_Mass50_1000_v",1);
-    hltTree_p->SetBranchAddress("HLT_PADoublePhoton15_Eta3p1_Mass50_1000_v",&eetrig);
+    eetrig=inFileName.find("Data2018PbPb_ZEE")!=std::string::npos ? 1 : 0;
+    emtrig=inFileName.find("Data2018PbPb_ZEE")!=std::string::npos ? 0 : 1;
+    // hltTree_p->SetBranchStatus("HLT_HIL1Mu5Eta2p5_Ele20Gsf_v",1);
+    // hltTree_p->SetBranchAddress("HLT_HIL1Mu5Eta2p5_Ele20Gsf_v",&emtrig);
+    // hltTree_p->SetBranchStatus("HLT_PADoublePhoton15_Eta3p1_Mass50_1000_v",1);
+    // hltTree_p->SetBranchAddress("HLT_PADoublePhoton15_Eta3p1_Mass50_1000_v",&eetrig);
   }
 
   
@@ -176,22 +181,22 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-
+    
     lepTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);    
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
     skimAnaTree_p->GetEntry(entry);
     wgtSum += weight;
-    
+
     int trig=emtrig+eetrig;
     if(trig==0) continue;
 
     if(!isPP){
-      if(!phfCoincFilter) continue;
-      if(!HBHENoiseFilterResult) continue;
-      if(!pcollisionEventSelection) continue;
-      if(!pprimaryVertexFilter) continue;
+      //if(!phfCoincFilter) continue;
+      //if(!HBHENoiseFilterResult) continue;
+      //if(!pcollisionEventSelection) continue;
+      //if(!pprimaryVertexFilter) continue;
       if(TMath::Abs(vz) > 15) continue;
     }
 
@@ -257,6 +262,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     if(eP4.size() && muP4.size()) {
       TLorentzVector em=eP4[0]+muP4[0];
       float charge=fForestEle.eleCharge->at(eleIdx[0])*fForestMu.muCharge->at(muIdx[0]);
+      if(doSameSign) charge*=-1;
       if(em.M()>20 && charge<0) {
         if(!isPP) {
           if(emtrig>0) isEM=true;
@@ -290,7 +296,8 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       if(fabs(jteta[jetIter])>jetEtaCut) continue;
       TLorentzVector jp4(0,0,0,0);
       jp4.SetPtEtaPhiM(jtpt[jetIter],jteta[jetIter],jtphi[jetIter],jtm[jetIter]);
-      if(jp4.DeltaR(selLeps[0])<0.4 || jp4.DeltaR(selLeps[1])<0.4) continue;
+      if(jp4.DeltaR(selLeps[0])<0.4 || jp4.DeltaR(selLeps[1])<0.4) continue;      
+      if(!isPP && trackN[jetIter]<2) continue;
       selJets.push_back(jp4);
       ++njets;
       ht.fill( "jpt",   jtpt[jetIter],        plotWgt, baseCat);
