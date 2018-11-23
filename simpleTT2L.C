@@ -294,8 +294,8 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       selJets.push_back(jp4);
       ++njets;
       ht.fill( "jpt",   jtpt[jetIter],        plotWgt, baseCat);
-      ht.fill( "jeta", jteta[jetIter],        plotWgt, baseCat);
-      ht.fill( "jcsv",   discr_csv[jetIter],  plotWgt, baseCat);
+      ht.fill( "jeta",  fabs(jteta[jetIter]), plotWgt, baseCat);
+      ht.fill( "jcsv",  discr_csv[jetIter],   plotWgt, baseCat);
       if(discr_csv[jetIter]>csvWP) ++nbjets;
     }
     

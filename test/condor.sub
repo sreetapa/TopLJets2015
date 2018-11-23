@@ -1,0 +1,10 @@
+executable = /afs/cern.ch/user/p/psilva/work/PbPb/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/test/runHiForest.sh
+arguments  = "$(infile) $(outDir)/HiForest_$(ProcId).root"
+output     = /afs/cern.ch/user/p/psilva/work/PbPb/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/test/output_$(ProcId).out
+error      = /afs/cern.ch/user/p/psilva/work/PbPb/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/test/output_$(ProcId).err
+log        = /afs/cern.ch/user/p/psilva/work/PbPb/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/test/output_$(ProcId).log
++JobFlavour = "tomorrow"
+outDir=/eos/cms/store/cmst3/user/psilva/PbPb2018/Zee
+queue infile from zeefile_list.txt
+outDir=/eos/cms/store/cmst3/user/psilva/PbPb2018/EM
+queue infile from emfile_list.txt

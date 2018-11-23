@@ -42,6 +42,18 @@ process.source = cms.Source("PoolSource",
         ),
     )
 
+if options.inputFiles:
+    print options.inputFiles
+    process.source.fileNames=cms.untracked.vstring(options.inputFiles)
+
+from FWCore.PythonUtilities.LumiList import LumiList
+lumiJson='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/HI/DCSOnly/json_DCSONLY_HI.txt'
+myLumis = LumiList(filename = lumiJson).getCMSSWString().split(',')
+process.source.lumisToProcess = cms.untracked.VLuminosityBlockRange()
+process.source.lumisToProcess.extend(myLumis)
+
+
+
 # Number of events we want to process, -1 = all events
 process.maxEvents = cms.untracked.PSet(
     input = cms.untracked.int32(options.maxEvents)
