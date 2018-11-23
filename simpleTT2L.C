@@ -17,7 +17,7 @@
 
 const bool isDebug = true;
 
-const float jetPtCut  = 25.;
+const float jetPtCut  = 30.;
 const float jetEtaCut = 2.4;
 const float lepPtCut  = 20.;
 const float lepEtaCut = 2.1;
@@ -34,15 +34,16 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   if(isDebug) std::cout << __LINE__ << std::endl;
 
   HistTool ht;
-  ht.addHist("lpt",     new TH1F("lpt",    ";Lepton transverse momentum [GeV];Events",25,20,200));
+  ht.addHist("lpt",     new TH1F("lpt",    ";Lepton transverse momentum [GeV];Events",20,20,200));
   ht.addHist("leta",    new TH1F("leta",   ";Lepton pseudo-rapidity;Events",20,0,2.5));
-  ht.addHist("mll",     new TH1F("mll",    ";Dilepton invariant mass [GeV];Events",25,20,200));
-  ht.addHist("dphill",  new TH1F("dphill", ";#Delta#phi(l,l');Events",25,0,6));
+  ht.addHist("mll",     new TH1F("mll",    ";Dilepton invariant mass [GeV];Events",20,20,200));
+  ht.addHist("ptll",    new TH1F("ptll",    ";Dilepton transverse momentum [GeV];Events",20,0,200));
+  ht.addHist("dphill",  new TH1F("dphill", ";#Delta#phi(l,l');Events",20,0,3.15));
   ht.addHist("njets",   new TH1F("njets",  ";Jet multiplicity;Events",5,0,5));
   ht.addHist("nbjets",  new TH1F("nbjets", ";b-jet multiplicity;Events",5,0,5));
-  ht.addHist("jpt",     new TH1F("jpt",    ";Jet transverse momentum [GeV];Events",25,20,200));
+  ht.addHist("jpt",     new TH1F("jpt",    ";Jet transverse momentum [GeV];Events",20,30,200));
   ht.addHist("jeta",    new TH1F("jeta",   ";Jet pseudo-rapidity;Events",20,0,2.5));
-  ht.addHist("jcsv",    new TH1F("jcsv",   ";CSVv2;Events",25,-1,1));
+  ht.addHist("jcsv",    new TH1F("jcsv",   ";CSVv2;Events",25,0,1));
 
 
   std::vector<std::string>* inFileNames_p = new std::vector<std::string>;
@@ -127,6 +128,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   ULong64_t evt;
   Int_t hiBin;
   Float_t hiHF,vz;
+  Float_t weight;
   hiTree_p->SetBranchStatus("*", 0);
   hiTree_p->SetBranchStatus("run", 1);
   hiTree_p->SetBranchStatus("evt", 1);
@@ -134,13 +136,15 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   hiTree_p->SetBranchStatus("hiBin", 1);
   hiTree_p->SetBranchStatus("hiHF", 1);
   hiTree_p->SetBranchStatus("vz", 1);
+  hiTree_p->SetBranchStatus("weight", 1);
   hiTree_p->SetBranchAddress("run", &run);
   hiTree_p->SetBranchAddress("evt", &evt);
   hiTree_p->SetBranchAddress("lumi", &lumi);
   hiTree_p->SetBranchAddress("hiBin", &hiBin);
   hiTree_p->SetBranchAddress("hiHF", &hiHF);
   hiTree_p->SetBranchAddress("vz", &vz);
-  
+  hiTree_p->SetBranchAddress("weight",&weight);
+
   int eetrig,emtrig;
   if(isPP){
     hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v1",1);
@@ -166,6 +170,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   skimAnaTree_p->SetBranchAddress("pcollisionEventSelection",&pcollisionEventSelection);
   
   
+  Float_t wgtSum(0);
   int nEntries = (int)lepTree_p->GetEntries();  
   int entryDiv = ((int)(nEntries/20));    
   for(int entry = 0; entry < nEntries; entry++){
@@ -175,8 +180,9 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     lepTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);    
     hltTree_p->GetEntry(entry);
+    hiTree_p->GetEntry(entry);
     skimAnaTree_p->GetEntry(entry);
-    continue;
+    wgtSum += weight;
     
     int trig=emtrig+eetrig;
     if(trig==0) continue;
@@ -261,21 +267,21 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
 
       if(isEM) {
         selLeps.push_back(eP4[0]);
-        selLeps.push_back(muP4[1]);
+        selLeps.push_back(muP4[0]);
       }
       
     }    
     if(!isZee && !isEM) continue;
 
     TString baseCat(isZee ? "zee" : "em");
-    float wgt(1.0);
-    ht.fill( "lpt",     selLeps[0].Pt(),                       wgt, baseCat+"l1");
-    ht.fill( "lpt",     selLeps[1].Pt(),                       wgt, baseCat+"l2");
-    ht.fill( "leta",    fabs(selLeps[0].Et()),                 wgt, baseCat+"l1");
-    ht.fill( "leta",    fabs(selLeps[1].Eta()),                wgt, baseCat+"l2");
-    ht.fill( "dphill",  fabs(selLeps[0].DeltaPhi(selLeps[1])), wgt, baseCat);
-    ht.fill( "mll",     (selLeps[0]+selLeps[1]).M(),           wgt, baseCat);
-    ht.fill( "ptll",    (selLeps[0]+selLeps[1]).Pt(),          wgt, baseCat);
+    float plotWgt(isMC ? weight : 1.0);
+    ht.fill( "lpt",     selLeps[0].Pt(),                       plotWgt, baseCat+"l1");
+    ht.fill( "lpt",     selLeps[1].Pt(),                       plotWgt, baseCat+"l2");
+    ht.fill( "leta",    fabs(selLeps[0].Eta()),                plotWgt, baseCat+"l1");
+    ht.fill( "leta",    fabs(selLeps[1].Eta()),                plotWgt, baseCat+"l2");
+    ht.fill( "dphill",  fabs(selLeps[0].DeltaPhi(selLeps[1])), plotWgt, baseCat);
+    ht.fill( "mll",     (selLeps[0]+selLeps[1]).M(),           plotWgt, baseCat);
+    ht.fill( "ptll",    (selLeps[0]+selLeps[1]).Pt(),          plotWgt, baseCat);
 
     std::vector<TLorentzVector> selJets;
     int njets(0),nbjets(0);
@@ -287,14 +293,14 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       if(jp4.DeltaR(selLeps[0])<0.4 || jp4.DeltaR(selLeps[1])<0.4) continue;
       selJets.push_back(jp4);
       ++njets;
-      ht.fill( "jpt",   jtpt[jetIter],        wgt, baseCat);
-      ht.fill( "jeta", jteta[jetIter],        wgt, baseCat);
-      ht.fill( "jcsv",   discr_csv[jetIter],  wgt, baseCat);
+      ht.fill( "jpt",   jtpt[jetIter],        plotWgt, baseCat);
+      ht.fill( "jeta", jteta[jetIter],        plotWgt, baseCat);
+      ht.fill( "jcsv",   discr_csv[jetIter],  plotWgt, baseCat);
       if(discr_csv[jetIter]>csvWP) ++nbjets;
     }
     
-    ht.fill( "njets",   njets,   wgt, baseCat);
-    ht.fill( "nbjets",  nbjets,  wgt, baseCat);
+    ht.fill( "njets",   njets,   plotWgt, baseCat);
+    ht.fill( "nbjets",  nbjets,  plotWgt, baseCat);
   }
 
   //save histos to file  
@@ -303,10 +309,12 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     fOut->cd();
     for (auto& it : ht.getPlots())  { 
       if(it.second->GetEntries()==0) continue;
+      if(isMC && wgtSum!=0) it.second->Scale(1./wgtSum);
       it.second->SetDirectory(fOut); it.second->Write(); 
     }
     for (auto& it : ht.get2dPlots())  { 
       if(it.second->GetEntries()==0) continue;
+      if(isMC && wgtSum!=0) it.second->Scale(1./wgtSum);
       it.second->SetDirectory(fOut); it.second->Write(); 
     }
     fOut->Close();
