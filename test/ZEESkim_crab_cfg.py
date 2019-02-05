@@ -15,14 +15,14 @@ config.JobType.pyCfgParams = ['isPP=False','maxEvents=-1','outputFile=HiForest.r
 config.JobType.outputFiles = ["HiForest.root"]
 
 config.section_("Data")
-config.Data.inputDataset = "/HIHardProbes/HIRun2018A-PbPbZEE-PromptReco-v1/RAW-RECO"
+config.Data.inputDataset = "/HIHardProbes/HIRun2018A-PbPbZEE-PromptReco-v2/RAW-RECO"
 config.Data.inputDBS = "global"
 config.Data.useParent = False
 config.Data.splitting = "Automatic"
 config.Data.ignoreLocality = False
 config.Data.publication = False
 config.Data.outLFNDirBase = "/store/group/cmst3/group/top/psilva/2018PbPb/"
-config.Data.lumiMask = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/HI/DCSOnly/json_DCSONLY_HI.txt'
+config.Data.lumiMask = '/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/HI/PromptReco/Cert_326381-327560_HI_PromptReco_Collisions18_JSON.txt'
 
 config.section_("Site")
 config.Site.storageSite = "T2_CH_CERN"
