@@ -45,7 +45,19 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   ht.addHist("jeta",    new TH1F("jeta",   ";Jet pseudo-rapidity;Events",20,0,2.5));
   ht.addHist("jcsv",    new TH1F("jcsv",   ";CSVv2;Events",25,0,1));
 
-
+  //electron id histograms
+  ht.addHist("esihih",     new TH1F("esihih",   ";#sigma(i#eta,i#eta);Electrons",20,0,0.03));
+  ht.addHist("edetain",    new TH1F("edetain",  ";#Delta#eta(in);Electrons",20,0,0.2));
+  ht.addHist("ephiin",     new TH1F("ephiin",   ";#Delta#phi(in) [rad];Electrons",20,0,0.4));
+  ht.addHist("ehoe",       new TH1F("ehoe",     ";h/e;Electrons",20,0,0.2));
+  ht.addHist("ed0",        new TH1F("ed0",      ";d_{0} [cm];Electrons",20,0,0.2));
+  ht.addHist("edz",        new TH1F("edz",      ";d_{z} [cm];Electrons",20,0,0.2));
+  ht.addHist("emisshits",  new TH1F("emisshits",";Missing inner hits;Electrons",3,0,3));
+  ht.addHist("eeop",       new TH1F("eeop",     ";|1/E-1/p|;Electrons",20,0,0.5));
+  ht.addHist("echreliso",  new TH1F("echreliso",";Relative PF charged isolation;Electrons",20,0,2.0));
+  ht.addHist("ephoreliso", new TH1F("ephoreliso",";Relative PF photon isolation;Electrons",20,0,1.0));
+  ht.addHist("eneureliso", new TH1F("eneureliso",";Relative PF neutral hadron isolation;Electrons",20,0,1.0));
+ 
   std::vector<std::string>* inFileNames_p = new std::vector<std::string>;
   inFileNames_p->push_back(inFileName);
 
@@ -101,7 +113,10 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
   lepTree_p->SetBranchAddress("eleSigmaIPhiIPhi", &fForestEle.eleSigmaIPhiIPhi);
   lepTree_p->SetBranchAddress("eleSCEtaWidth", &fForestEle.eleSCEtaWidth);
   lepTree_p->SetBranchAddress("eleSCPhiWidth", &fForestEle.eleSCPhiWidth);
-
+  lepTree_p->SetBranchAddress("eleMissHits", &fForestEle.eleMissHits);
+  lepTree_p->SetBranchAddress("elePFChIso03", &fForestEle.elePFChIso03);
+  lepTree_p->SetBranchAddress("elePFPhoIso03", &fForestEle.elePFPhoIso03);
+  lepTree_p->SetBranchAddress("elePFNeuIso03", &fForestEle.elePFNeuIso03);
     
   const int maxJets = 5000;
   int           nref;
@@ -203,7 +218,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     //use cuts corresponding to most peripheral, if PP
     int centEleId = isPP ? 3 : getCentBinEleId((double)hiBin/2.);
     
-    std::vector<int> muIdx,eleIdx;    
+    std::vector<int> muIdx,eleIdx,noIdEleIdx;    
     std::vector<TLorentzVector> muP4,eP4;
     for(unsigned int muIter = 0; muIter < fForestMu.muPt->size(); ++muIter) {
       if(TMath::Abs(fForestMu.muEta->at(muIter)) > lepEtaCut) continue;
@@ -228,6 +243,8 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       if(fForestEle.elePt->at(eleIter) < lepPtCut) continue;	      
       if(TMath::Abs(fForestEle.eleEta->at(eleIter)) > barrelEndcapEta[0]
          && TMath::Abs(fForestEle.eleEta->at(eleIter)) < barrelEndcapEta[1] ) continue;
+      noIdEleIdx.push_back(eleIter);
+
       unsigned int eleEtaCutPos(TMath::Abs(fForestEle.eleEta->at(eleIter))<barrelEndcapEta[0] ? 0 : 1);
       if(fForestEle.eleSigmaIEtaIEta->at(eleIter) > eleSigmaIEtaIEta_VetoCut[eleEtaCutPos][centEleId]) continue;
       if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter)) > eleDEtaIn_VetoCut[eleEtaCutPos][centEleId]) continue;
@@ -244,6 +261,49 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
                                      eleM);
     }
 
+    //z->ee control region for electron id variables
+    if(noIdEleIdx.size()>1) {
+      TLorentzVector e1(0,0,0,0),e2(0,0,0,0);
+      e1.SetPtEtaPhiM(fForestEle.elePt->at(noIdEleIdx[0]),fForestEle.eleEta->at(noIdEleIdx[0]),fForestEle.elePhi->at(noIdEleIdx[0]),eleM);
+      e2.SetPtEtaPhiM(fForestEle.elePt->at(noIdEleIdx[1]),fForestEle.eleEta->at(noIdEleIdx[1]),fForestEle.elePhi->at(noIdEleIdx[1]),eleM);
+      float charge(fForestEle.eleCharge->at(noIdEleIdx[0])*fForestEle.eleCharge->at(noIdEleIdx[1]));
+      if(doSameSign) charge*=-1;
+      float mll((e1+e2).M());
+      if(fabs(mll-91)<30 && charge<0 && eetrig>0 && fabs(e1.Eta())<1.44 && fabs(e2.Eta())<1.44) {
+
+        std::vector<TString> baseCat(1,"zeectrl");
+        if(isPP) {
+          baseCat.push_back("zeectrlhighcen");
+          baseCat.push_back("zeectrllowcen");
+        }
+        else {
+          int centEleId=getCentBinEleId((double)hiBin/2.);
+          baseCat.push_back(TString("zeectrl")+(centEleId<1 ? "highcen" : "lowcen"));
+        }
+            
+        float plotWgt(isMC ? weight : 1.0);
+        ht.fill("mll", mll, plotWgt, baseCat);
+
+        for(size_t iele=0; iele<2; iele++) {
+          int eleIter=noIdEleIdx[iele];
+          bool isEB(TMath::Abs(fForestEle.eleEta->at(eleIter))<barrelEndcapEta[0]);
+          std::vector<TString> cat(baseCat);
+          for(size_t icat=0; icat<cat.size(); icat++) cat[icat]+=(isEB?"eb":"ee");
+          
+          ht.fill("esihih",     fForestEle.eleSigmaIEtaIEta->at(eleIter),         plotWgt,cat);
+          ht.fill("edetain",    TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter)), plotWgt,cat);
+          ht.fill("ephiin",     TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter)), plotWgt,cat);
+          ht.fill("ehoe",       fForestEle.eleHoverE->at(eleIter),                plotWgt,cat);
+          ht.fill("ed0",        TMath::Abs(fForestEle.eleD0->at(eleIter)),        plotWgt,cat);
+          ht.fill("edz",        TMath::Abs(fForestEle.eleDz->at(eleIter)),        plotWgt,cat);
+          ht.fill("eeop",       TMath::Abs(fForestEle.eleEoverPInv->at(eleIter)), plotWgt,cat);         
+          ht.fill("emisshits",  fForestEle.eleMissHits->at(eleIter),              plotWgt,cat);         
+          ht.fill("echreliso",  fForestEle.elePFChIso03->at(eleIter)/fForestEle.elePt->at(eleIter),  plotWgt,cat);         
+          ht.fill("ephoreliso", fForestEle.elePFPhoIso03->at(eleIter)/fForestEle.elePt->at(eleIter), plotWgt,cat);         
+          ht.fill("eneureliso", fForestEle.elePFNeuIso03->at(eleIter)/fForestEle.elePt->at(eleIter), plotWgt,cat);         
+        }
+      }
+    }
     
     int nLep=muIdx.size()+eleIdx.size();
     if(nLep<2) continue;
@@ -253,7 +313,8 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     if(eP4.size()>1) {
       TLorentzVector ee=eP4[0]+eP4[1];
       float charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
-      if( fabs(ee.M()-91)<15 && charge<0 && eetrig>0) {
+      if(doSameSign) charge*=-1;
+      if( fabs(ee.M()-91)<15 && charge<0 && eetrig>0 && fabs(eP4[0].Eta())<1.44 && fabs(eP4[1].Eta())<1.44) {
         isZee=true; 
         selLeps.push_back(eP4[0]);
         selLeps.push_back(eP4[1]);
@@ -263,7 +324,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       TLorentzVector em=eP4[0]+muP4[0];
       float charge=fForestEle.eleCharge->at(eleIdx[0])*fForestMu.muCharge->at(muIdx[0]);
       if(doSameSign) charge*=-1;
-      if(em.M()>20 && charge<0) {
+      if(em.M()>20 && charge<0  && fabs(eP4[0].Eta())<1.44) {
         if(!isPP) {
           if(emtrig>0) isEM=true;
         }
@@ -290,6 +351,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     ht.fill( "ptll",    (selLeps[0]+selLeps[1]).Pt(),          plotWgt, baseCat);
 
     std::vector<TLorentzVector> selJets;
+    std::vector<int> selJetsIdx;
     int njets(0),nbjets(0);
     for(int jetIter = 0; jetIter < nref; jetIter++){
       if(jtpt[jetIter]<jetPtCut) continue;
@@ -299,6 +361,7 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
       if(jp4.DeltaR(selLeps[0])<0.4 || jp4.DeltaR(selLeps[1])<0.4) continue;      
       if(!isPP && trackN[jetIter]<2) continue;
       selJets.push_back(jp4);
+      selJetsIdx.push_back(jetIter);
       ++njets;
       ht.fill( "jpt",   jtpt[jetIter],        plotWgt, baseCat);
       ht.fill( "jeta",  fabs(jteta[jetIter]), plotWgt, baseCat);
@@ -308,6 +371,15 @@ void simpleTT2L(const std::string outFileName = "", const std::string inFileName
     
     ht.fill( "njets",   njets,   plotWgt, baseCat);
     ht.fill( "nbjets",  nbjets,  plotWgt, baseCat);
+    if(nbjets>=2 && !isPP && !isMC) {
+      cout << "****************" << endl;
+      cout << run << ":" << lumi << ":" << evt << endl;
+      cout << "e: pt=" << selLeps[0].Pt() << " eta=" << selLeps[0].Eta() << " phi=" << selLeps[0].Phi() << endl;
+      cout << "m: pt=" << selLeps[1].Pt() << " eta=" << selLeps[1].Eta() << " phi=" << selLeps[1].Phi() << endl;
+      for(size_t ij=0; ij<selJetsIdx.size(); ij++)
+        cout << "j" << ij << " pt=" << jtpt[ij] << " eta=" << jteta[ij] << " phi=" << jtphi[ij] << " csvV2=" << discr_csv[ij] << endl;
+      cout << "****************" << endl;
+    }
   }
 
   //save histos to file  
