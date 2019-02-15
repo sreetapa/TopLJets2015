@@ -21,8 +21,8 @@ def createJob(request,pset,dataset,lumiMask,lfnDirBase):
     cfg.write('config.JobType.pluginName = "Analysis"\n')
     cfg.write('config.JobType.psetName = "%s"\n'%pset)
     cfg.write('config.JobType.disableAutomaticOutputCollection = False\n')
-    cfg.write('config.JobType.pyCfgParams = ["isPP=False","maxEvents=-1","outputFile=HiForest.root"]\n')
-    cfg.write('config.JobType.outputFiles = ["HiForest.root"]\n')
+    cfg.write('config.JobType.pyCfgParams = [\'isPP=False\',\'maxEvents=-1\',\'outputFile=HiForest.root\']\n')
+    cfg.write('config.JobType.outputFiles = [\'HiForest.root\']\n')
     cfg.write('\n')
     cfg.write('config.section_("Data")\n')
     cfg.write('config.Data.inputDataset = "%s"\n' % dataset)
@@ -52,9 +52,10 @@ if submit:
 
 
 for r,d in [
-    ('DataPbPb_2018A_ZMM','/HISingleMuon/HIRun2018A-PbPbZMM-PromptReco-v2/RAW-RECO'),
-    ('DataPbPb_2018A_ZEE','/HISingleMuon/HIRun2018A-PbPbZEE-PromptReco-v2/RAW-RECO'),
-    ('DataPbPb_2018A_EMu','/HISingleMuon/HIRun2018A-PbPbEMu-PromptReco-v2/RAW-RECO')    
+    ('DataPbPb_2018A_SingleMu_ZMM',   '/HISingleMuon/HIRun2018A-PbPbZMM-PromptReco-v2/RAW-RECO'),
+    ('DataPbPb_2018A_DoubleMuon_ZMM', '/HIDoubleMuon/HIRun2018A-PbPbZMM-PromptReco-v2/RAW-RECO'),
+    ('DataPbPb_2018A_HardProbes_ZEE', '/HIHardProbes/HIRun2018A-PbPbZEE-PromptReco-v2/RAW-RECO'),
+    ('DataPbPb_2018A_HardProbes_EMu', '/HIHardProbes/HIRun2018A-PbPbEMu-PromptReco-v2/RAW-RECO'),
     ]:
 
     cfg=createJob(request=r,pset=pset,dataset=d,lumiMask=lumiMask,lfnDirBase=lfnDirBase)
