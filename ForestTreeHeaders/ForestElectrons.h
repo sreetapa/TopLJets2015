@@ -10,27 +10,27 @@ public :
    ForestElectrons(TChain *t)
      {
        t->SetBranchStatus("ele*", 1);    
-       t->SetBranchAddress("elePt", &fForestEle.elePt);
-       t->SetBranchAddress("elePhi", &fForestEle.elePhi);
-       t->SetBranchAddress("eleEta", &fForestEle.eleEta);
-       t->SetBranchAddress("eleCharge", &fForestEle.eleCharge);
-       t->SetBranchAddress("eleSigmaIEtaIEta", &fForestEle.eleSigmaIEtaIEta);
-       t->SetBranchAddress("eledEtaAtVtx", &fForestEle.eledEtaAtVtx);
-       t->SetBranchAddress("eledPhiAtVtx", &fForestEle.eledPhiAtVtx);
-       t->SetBranchAddress("eleHoverE", &fForestEle.eleHoverE);
-       t->SetBranchAddress("eleD0", &fForestEle.eleD0);
-       t->SetBranchAddress("eleDz", &fForestEle.eleDz);
-       t->SetBranchAddress("eleEoverPInv", &fForestEle.eleEoverPInv);
-       t->SetBranchAddress("eleSCPhi", &fForestEle.eleSCPhi);
-       t->SetBranchAddress("eleSCEta", &fForestEle.eleSCEta);
-       t->SetBranchAddress("eleSigmaIEtaIEta_2012", &fForestEle.eleSigmaIEtaIEta_2012);
-       t->SetBranchAddress("eleSigmaIPhiIPhi", &fForestEle.eleSigmaIPhiIPhi);
-       t->SetBranchAddress("eleSCEtaWidth", &fForestEle.eleSCEtaWidth);
-       t->SetBranchAddress("eleSCPhiWidth", &fForestEle.eleSCPhiWidth);
-       t->SetBranchAddress("eleMissHits", &fForestEle.eleMissHits);
-       t->SetBranchAddress("elePFChIso03", &fForestEle.elePFChIso03);
-       t->SetBranchAddress("elePFPhoIso03", &fForestEle.elePFPhoIso03);
-       t->SetBranchAddress("elePFNeuIso03", &fForestEle.elePFNeuIso03);
+       t->SetBranchAddress("elePt", &elePt);
+       t->SetBranchAddress("elePhi", &elePhi);
+       t->SetBranchAddress("eleEta", &eleEta);
+       t->SetBranchAddress("eleCharge", &eleCharge);
+       t->SetBranchAddress("eleSigmaIEtaIEta", &eleSigmaIEtaIEta);
+       t->SetBranchAddress("eledEtaAtVtx", &eledEtaAtVtx);
+       t->SetBranchAddress("eledPhiAtVtx", &eledPhiAtVtx);
+       t->SetBranchAddress("eleHoverE", &eleHoverE);
+       t->SetBranchAddress("eleD0", &eleD0);
+       t->SetBranchAddress("eleDz", &eleDz);
+       t->SetBranchAddress("eleEoverPInv", &eleEoverPInv);
+       t->SetBranchAddress("eleSCPhi", &eleSCPhi);
+       t->SetBranchAddress("eleSCEta", &eleSCEta);
+       t->SetBranchAddress("eleSigmaIEtaIEta_2012", &eleSigmaIEtaIEta_2012);
+       t->SetBranchAddress("eleSigmaIPhiIPhi", &eleSigmaIPhiIPhi);
+       t->SetBranchAddress("eleSCEtaWidth", &eleSCEtaWidth);
+       t->SetBranchAddress("eleSCPhiWidth", &eleSCPhiWidth);
+       t->SetBranchAddress("eleMissHits", &eleMissHits);
+       t->SetBranchAddress("elePFChIso03", &elePFChIso03);
+       t->SetBranchAddress("elePFPhoIso03", &elePFPhoIso03);
+       t->SetBranchAddress("elePFNeuIso03", &elePFNeuIso03);
      };
    ~ForestElectrons(){};
 

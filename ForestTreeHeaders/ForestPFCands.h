@@ -11,16 +11,16 @@ class ForestPFCands {
 public :
   ForestPFCands(TChain *t)
     {
-      t->SetBranchAddress("pfId", &pfId, &b_pfId);
-      t->SetBranchAddress("pfPt", &pfPt, &b_pfPt);
-      t->SetBranchAddress("pfEta", &pfEta, &b_pfEta);
-      t->SetBranchAddress("pfPhi", &pfPhi, &b_pfPhi);
-      t->SetBranchAddress("pfM", &pfM, &b_pfM);
-      t->SetBranchAddress("trkAlgo", &trkAlgo, &b_trkAlgo);
-      t->SetBranchAddress("trkPtError", &trkPtError, &b_trkPtError);
-      t->SetBranchAddress("trkNHit", &trkNHit, &b_trkNHit);
-      t->SetBranchAddress("trkChi2", &trkChi2, &b_trkChi2);
-      t->SetBranchAddress("trkNdof", &trkNdof, &b_trkNdof);     
+      t->SetBranchAddress("pfId", &pfId);
+      t->SetBranchAddress("pfPt", &pfPt);
+      t->SetBranchAddress("pfEta", &pfEta);
+      t->SetBranchAddress("pfPhi", &pfPhi);
+      t->SetBranchAddress("pfM", &pfM);
+      t->SetBranchAddress("trkAlgo", &trkAlgo);
+      t->SetBranchAddress("trkPtError", &trkPtError);
+      t->SetBranchAddress("trkNHit", &trkNHit);
+      t->SetBranchAddress("trkChi2", &trkChi2);
+      t->SetBranchAddress("trkNdof", &trkNdof);
     }
   ~ForestPFCands() {}
 

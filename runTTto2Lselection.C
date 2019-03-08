@@ -44,17 +44,12 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 
 
 //
-void runTTto2Lselection(const std::string outFileName = "", 
-                        const std::string inFileName = "", 
+void runTTto2Lselection(TString outURL,
+                        TString inURL,
                         bool isMC = false, 
                         bool isPP=true,
                         bool doSameSign=false)
 {
-  if(!strcmp(inFileName.c_str(), "")){
-    std::cout << "No inputs specified. return" << std::endl;
-    return;
-  }
-
   //book some histograms
   HistTool ht;
 
@@ -85,30 +80,29 @@ void runTTto2Lselection(const std::string outFileName = "",
   ht.addHist("neureliso", new TH1F("neureliso",";Relative PF neutral hadron isolation;Leptons",20,0,1.0));
 
   //configure leptons
-  setEleIdCuts();
   TChain *lepTree_p     = new TChain(isPP ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
-  lepTree_p->Add(fname);
+  lepTree_p->Add(inURL);
   ForestMuons fForestMu(lepTree_p);  
   ForestElectrons fForestEle(lepTree_p);
 
   //configure PF cands
   TChain *pfCandTree_p  = new TChain("pfcandAnalyzer/pfTree");
-  pfCandTree_p->Add(fname);
+  pfCandTree_p->Add(inURL);
   ForestPFCands fForestPF(pfCandTree_p);
 
   //configure jets
   TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t"      : "akPu4CaloJetAnalyzer/t");
-  jetTree_p->Add(fname);
+  jetTree_p->Add(inURL);
   ForestJets fForestJets(jetTree_p);
 
   //global variables
   TChain *hiTree_p      = new TChain("hiEvtAnalyzer/HiTree");
-  hiTree_p->Add(fname);
+  hiTree_p->Add(inURL);
   ForestHiTree fForestTree(hiTree_p);
 
   //trigger
   TChain *hltTree_p     = new TChain("hltanalysis/HltTree");
-  hltTree_p->Add(fname);
+  hltTree_p->Add(inURL);
   int etrig(0),mtrig(0);
   if(isPP){
     hltTree_p->SetBranchStatus("HLT_HIL3Mu20_v1",1);
@@ -267,7 +261,7 @@ void runTTto2Lselection(const std::string outFileName = "",
     ClusterSequence cs(pseudoParticles, jet_def);
     std::vector<PseudoJet> tkjets = sorted_by_pt(cs.inclusive_jets());
     for(auto j : tkjets) {
-      if(j.constituents()<2) continue;
+      if(j.constituents().size()<2) continue;
       TLorentzVector p4(j.px(),j.py(),j.pz(),j.e());
       if(p4.DeltaR(selLeptons[0])<0.4 || p4.DeltaR(selLeptons[1])<0.4) continue;
       if(fabs(p4.Eta())<2.4) continue;
@@ -371,8 +365,8 @@ void runTTto2Lselection(const std::string outFileName = "",
   }
 
   //save histos to file  
-  if(outFileName!=""){
-    TFile *fOut=TFile::Open(outFileName.c_str(),"RECREATE");
+  if(outURL!=""){
+    TFile *fOut=TFile::Open(outURL,"RECREATE");
     fOut->cd();
     for (auto& it : ht.getPlots())  { 
       if(it.second->GetEntries()==0) continue;
