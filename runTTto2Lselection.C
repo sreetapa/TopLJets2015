@@ -8,10 +8,12 @@
 #include <string>
 #include <vector>
 
+#include "ForestTreeHeaders/ForestHiTree.h"
 #include "ForestTreeHeaders/ForestElectrons.h"
 #include "ForestTreeHeaders/ForestMuons.h"
 #include "ForestTreeHeaders/ForestPFCands.h"
-#include "ForestTreeHeaders/ForestHiTree.h"
+#include "ForestTreeHeaders/ForestJets.h"
+
 #include "ForestTreeHeaders/HistTool.h"
 
 #include "fastjet/ClusterSequence.hh"
@@ -98,7 +100,7 @@ void runTTto2Lselection(TString outURL,
   //global variables
   TChain *hiTree_p      = new TChain("hiEvtAnalyzer/HiTree");
   hiTree_p->Add(inURL);
-  ForestHiTree fForestTree(hiTree_p);
+  HiTree fForestTree(hiTree_p);
 
   //trigger
   TChain *hltTree_p     = new TChain("hltanalysis/HltTree");
@@ -128,9 +130,8 @@ void runTTto2Lselection(TString outURL,
     jetTree_p->GetEntry(entry);    
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
-    skimAnaTree_p->GetEntry(entry);
 
-    wgtSum += weight;
+    wgtSum += fForestTree.weight;
 
     //first of all require a trigger
     int trig=etrig+mtrig;
@@ -138,7 +139,7 @@ void runTTto2Lselection(TString outURL,
 
     //apply global filters
     if(!isPP){
-      if(TMath::Abs(vz) > 15) continue;
+      if(TMath::Abs(fForestTree.vz) > 15) continue;
     }
 
     //select muons
@@ -207,36 +208,36 @@ void runTTto2Lselection(TString outURL,
     int nLep=muIdx.size()+eleIdx.size();
     if(nLep<2) continue;
   
-    std::vector<TLorentzVector> selLeps;
+    std::vector<TLorentzVector> selLeptons;
     int dilCode(0);
     int charge(0);    
     TLorentzVector ll;
-    if(mP4.size()>1 && mtrig>0) {
+    if(muP4.size()>1 && mtrig>0) {
       dilCode=13*13;
-      ll=mP4[0]+mP4[1];
-      selLeps.push_back(mP4[0]);
-      selLeps.push_back(mP4[1]);
+      ll=muP4[0]+muP4[1];
+      selLeptons.push_back(muP4[0]);
+      selLeptons.push_back(muP4[1]);
       charge=fForestMu.muCharge->at(muIdx[0])*fForestMu.muCharge->at(muIdx[1]);
     }
-    else if(mP4.size()>0 && eP4.size()>0 && (etrig>0 || mtrig>0)) {
+    else if(muP4.size()>0 && eP4.size()>0 && (etrig>0 || mtrig>0)) {
       dilCode=11*13;
-      ll=mP4[0]+eP4[0];
-      selLeps.push_back(mP4[0]);
-      selLeps.push_back(eP4[0]);
+      ll=muP4[0]+eP4[0];
+      selLeptons.push_back(muP4[0]);
+      selLeptons.push_back(eP4[0]);
       charge=fForestMu.muCharge->at(muIdx[0])*fForestEle.eleCharge->at(eleIdx[0]);      
     }
     else if(eP4.size()>1 && etrig>0) {
       dilCode=11*11;
       ll=eP4[0]+eP4[1];
-      selLeps.push_back(eP4[0]);
-      selLeps.push_back(eP4[1]);
+      selLeptons.push_back(eP4[0]);
+      selLeptons.push_back(eP4[1]);
       charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
     } else{
       continue;
     }
 
     if(ll.M()<20) continue;
-    bool isOS(charge<0)
+    bool isOS(charge<0);
     if(doSameSign ^ isOS) continue;
 
     bool isZ( dilCode!=11*13 && fabs(ll.M()-91)<15 );
@@ -245,7 +246,7 @@ void runTTto2Lselection(TString outURL,
     //build track jets from PF candidates
     //cross-clean with respect to the selected leptons
     //require at least 2 constituents
-    std::vector<LorentzVector> tkJetsP4;
+    std::vector<TLorentzVector> tkJetsP4;
     std::vector<PseudoJet> pseudoParticles;
     ForestPFCands fForestPF(pfCandTree_p);
     for(size_t ipf=0; ipf<fForestPF.pfId->size(); ipf++) {
@@ -280,7 +281,7 @@ void runTTto2Lselection(TString outURL,
       TLorentzVector jp4(0,0,0,0);
       jp4.SetPtEtaPhiM( fForestJets.jtpt[jetIter],fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
 
-      float csvVal=fForestJets.discr_csv[jetIter];
+      float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
       float msvtx=fForestJets.svtxm[jetIter];
 
@@ -292,7 +293,7 @@ void runTTto2Lselection(TString outURL,
 
       if(jp4.Pt()<30.) continue;
       if(fabs(jp4.Eta())>2.4) continue;
-      if(jp4.DeltaR(selLeps[0])<0.4 || jp4.DeltaR(selLeps[1])<0.4) continue;            
+      if(jp4.DeltaR(selLeptons[0])<0.4 || jp4.DeltaR(selLeptons[1])<0.4) continue;            
 
       pfJetsIdx.push_back(std::make_tuple(jetIter,nsvtxTk,msvtx,csvVal));
       pfJetsP4.push_back(jp4);
@@ -307,8 +308,8 @@ void runTTto2Lselection(TString outURL,
     std::vector<TString> categs;
     categs.push_back(dilCat);
     if(isZ) categs.push_back(dilCat+"Z");
-    bool l1EE(fabs(selLeps[0].Eta())>barrelEndcapEta[1]);
-    bool l2EE(fabs(selLeps[1].Eta())>barrelEndcapEta[1]);
+    bool l1EE(fabs(selLeptons[0].Eta())>barrelEndcapEta[1]);
+    bool l2EE(fabs(selLeptons[1].Eta())>barrelEndcapEta[1]);
     TString etaCateg( (!l1EE && !l2EE) ? "BB" : (((l1EE && !l2EE) || (!l1EE && l2EE)) ? "EB" : "EE" ) );
     categs.push_back(dilCat+etaCateg);
     if(isZ) {
@@ -319,29 +320,29 @@ void runTTto2Lselection(TString outURL,
 
     //monitor also after run where EE scale shift changed
     if(!isPP){
-      TString pf( ForestTree.run>=firstEEScaleShiftRun ? "after" : "before" );
+      TString pf( fForestTree.run>=firstEEScaleShiftRun ? "after" : "before" );
       std::vector<TString> addCategs;
       for(auto c : categs) {addCategs.push_back(c); addCategs.push_back(c+pf); }
       categs=addCategs;
     }
 
-    float plotWgt(isMC ? weight : 1.0);
-    ht.fill( "l1pt",      selLeps[0].Pt(),                       plotWgt, categs);
-    ht.fill( "l2pt",      selLeps[1].Pt(),                       plotWgt, categs);
-    ht.fill( "l1eta",     fabs(selLeps[0].Eta()),                plotWgt, categs);
-    ht.fill( "l2eta",     fabs(selLeps[1].Eta()),                plotWgt, categs);
-    ht.fill( "dphill",    fabs(selLeps[0].DeltaPhi(selLeps[1])), plotWgt, categs);
+    float plotWgt(isMC ? fForestTree.weight : 1.0);
+    ht.fill( "l1pt",      selLeptons[0].Pt(),                       plotWgt, categs);
+    ht.fill( "l2pt",      selLeptons[1].Pt(),                       plotWgt, categs);
+    ht.fill( "l1eta",     fabs(selLeptons[0].Eta()),                plotWgt, categs);
+    ht.fill( "l2eta",     fabs(selLeptons[1].Eta()),                plotWgt, categs);
+    ht.fill( "dphill",    fabs(selLeptons[0].DeltaPhi(selLeptons[1])), plotWgt, categs);
     ht.fill( "mll",       ll.M(),                                plotWgt, categs);
     ht.fill( "ptll",      ll.Pt(),                               plotWgt, categs);
     ht.fill( "npfjets",   npfjets,   plotWgt, categs);
     ht.fill( "npfbjets",  npfbjets,  plotWgt, categs);
 
-    for(size_it ij=0; ij<min(matchedJetsIdx.size(),2); ij++) {     
+    for(size_t ij=0; ij<min(matchedJetsIdx.size(),size_t(2)); ij++) {     
       TLorentzVector p4=tkJetsP4[ij];
       float ntks(std::get<1>(matchedJetsIdx[ij]));
       float svm(std::get<2>(matchedJetsIdx[ij]));
       float csv(std::get<3>(matchedJetsIdx[ij]));
-      TString ppf(j==1 ? "1" : "2");
+      TString ppf(ij==1 ? "1" : "2");
       ht.fill( "tk"+ppf+"jpt",      p4.Pt(),        plotWgt, categs);
       ht.fill( "tk"+ppf+"jeta",     fabs(p4.Eta()), plotWgt, categs);
       ht.fill( "tk"+ppf+"jsvtxm",   ntks,           plotWgt, categs);
@@ -349,12 +350,12 @@ void runTTto2Lselection(TString outURL,
       ht.fill( "tk"+ppf+"jcsv",     csv,            plotWgt, categs);
     }
 
-    for(size_it ij=0; ij<min(pfJetsIdx.size(),2); ij++) {     
+    for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
       TLorentzVector p4=pfJetsP4[ij];
       float ntks(std::get<1>(matchedJetsIdx[ij]));
       float svm(std::get<2>(matchedJetsIdx[ij]));
       float csv(std::get<3>(matchedJetsIdx[ij]));
-      TString ppf(j==1 ? "1" : "2");
+      TString ppf(ij==1 ? "1" : "2");
       ht.fill( "pf"+ppf+"jpt",      p4.Pt(),        plotWgt, categs);
       ht.fill( "pf"+ppf+"jeta",     fabs(p4.Eta()), plotWgt, categs);
       ht.fill( "pf"+ppf+"jsvtxm",   ntks,           plotWgt, categs);

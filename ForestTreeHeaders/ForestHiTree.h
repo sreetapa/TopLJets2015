@@ -8,7 +8,7 @@
 
 class HiTree {
 public :
-  HiTree(TChain *t) 
+ HiTree(TChain *t) : weight(1.0)
     {
       t->SetBranchAddress("run", &run);
       t->SetBranchAddress("evt", &evt);
@@ -17,6 +17,7 @@ public :
       t->SetBranchAddress("vy", &vy);
       t->SetBranchAddress("vz", &vz);
       t->SetBranchAddress("hiBin", &hiBin);
+      t->SetBranchAddress("weight", &weight);
       t->SetBranchAddress("hiHF", &hiHF);
       t->SetBranchAddress("hiHFplus", &hiHFplus);
       t->SetBranchAddress("hiHFminus", &hiHFminus);
@@ -58,6 +59,7 @@ public :
    Float_t         vy;
    Float_t         vz;
    Int_t           hiBin;
+   Float_t         weight;
    Float_t         hiHF;
    Float_t         hiHFplus;
    Float_t         hiHFminus;
