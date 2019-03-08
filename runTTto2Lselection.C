@@ -307,8 +307,8 @@ void runTTto2Lselection(TString outURL,
     std::vector<TString> categs;
     categs.push_back(dilCat);
     if(isZ) categs.push_back(dilCat+"Z");
-    bool l1EE(fabs(selLeps[0]).Eta()>barrelEndcapEta[1]);
-    bool l2EE(fabs(selLeps[1]).Eta()>barrelEndcapEta[1]);
+    bool l1EE(fabs(selLeps[0].Eta())>barrelEndcapEta[1]);
+    bool l2EE(fabs(selLeps[1].Eta())>barrelEndcapEta[1]);
     TString etaCateg( (!l1EE && !l2EE) ? "BB" : (((l1EE && !l2EE) || (!l1EE && l2EE)) ? "EB" : "EE" ) );
     categs.push_back(dilCat+etaCateg);
     if(isZ) {
