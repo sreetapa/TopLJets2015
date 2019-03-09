@@ -206,7 +206,11 @@ int main(int argc, char* argv[])
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
       p4.SetPtEtaPhiM(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),0.000511);
-      if(!isPP && fForestTree.run<=firstEEScaleShiftRun) p4 *=eeScaleShift;         
+
+      //apply ad-hoc shift for endcap electrons if needed
+      if(!isPP && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>barrelEndcapEta[1])
+        p4 *=eeScaleShift;         
+
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
       if(p4.Pt() < lepPtCut) continue;	      
