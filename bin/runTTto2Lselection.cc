@@ -38,8 +38,8 @@ using namespace fastjet;
 typedef std::tuple<int,int,float,float> BtagInfo_t;
 static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 {
-  int ntks_a(std::get<1>(a)), ntks_b(std::get<1>(b));
-  if(ntks_a>ntks_b) return true;
+  //int ntks_a(std::get<1>(a)), ntks_b(std::get<1>(b));
+  //if(ntks_a>ntks_b) return true;
 
   float csv_a(std::get<3>(a)), csv_b(std::get<3>(b));
   if(csv_a>csv_b) return true;
@@ -74,6 +74,7 @@ int main(int argc, char* argv[])
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",20,20,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",20,0,200));
   ht.addHist("dphill",   new TH1F("dphill",   ";#Delta#phi(l,l');Events",20,0,3.15));
+  ht.addHist("etall",    new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,5));
   ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,25));
   for(size_t i=0; i<2; i++) {
     TString pf(i==0 ? "tk" : "pf");
@@ -82,6 +83,7 @@ int main(int argc, char* argv[])
     ht.addHist("n"+pf+"svtx",    new TH1F("n"+pf+"svtx",    ";Secondary vertex multiplicity;Events",5,0,5));
     for(size_t j=1; j<=2; j++){
       TString ppf(j==1 ? "1" : "2");
+      ht.addHist(pf+ppf+"jbalance",    new TH1F(pf+ppf+"jbalance", ";R = p_{T}(ll)/p_{T}(j);Events",50,0,1.5));
       ht.addHist(pf+ppf+"jpt",         new TH1F(pf+ppf+"jpt",      ";Jet transverse momentum [GeV];Events",20,30,200));
       ht.addHist(pf+ppf+"jeta",        new TH1F(pf+ppf+"jeta",     ";Jet pseudo-rapidity;Events",20,0,2.5));
       ht.addHist(pf+ppf+"jsvtxm",      new TH1F(pf+ppf+"jsvtxm",   ";Secondary vertex mass;Events",25,0,6));
@@ -198,6 +200,7 @@ int main(int argc, char* argv[])
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<int> eleIdx,noIdEleIdx; 
     std::vector<TLorentzVector> eP4;
+    bool allEleInEB(true);
     for(unsigned int eleIter = 0; eleIter < fForestEle.elePt->size(); ++eleIter) {
       
       //kinematics selection
@@ -223,6 +226,7 @@ int main(int argc, char* argv[])
       //selected electron
       eleIdx.push_back(eleIter);
       eP4.push_back(p4);
+      if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0]) allEleInEB=false;
     }
 
     int nLep=muIdx.size()+eleIdx.size();
@@ -301,10 +305,11 @@ int main(int argc, char* argv[])
       tkJetsP4.push_back(p4);
     }
    
-    //b-tag jet the track jets by matching in deltaR to leptons
+    //b-tag jet the track jets by matching in deltaR to PF jets
     std::vector<BtagInfo_t> matchedJetsIdx,pfJetsIdx;
     std::vector<TLorentzVector> pfJetsP4;
     int npfjets(0),npfbjets(0); 
+    bool allPFBInEB(true),hasAwayPFJet(true);
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
       //at least two tracks
@@ -326,82 +331,143 @@ int main(int argc, char* argv[])
       if(jp4.Pt()<30.) continue;
       if(fabs(jp4.Eta())>2.4) continue;
       if(jp4.DeltaR(selLeptons[0])<0.4 || jp4.DeltaR(selLeptons[1])<0.4) continue;            
-
+      bool isBTagged(csvVal>csvWP);
+      
       pfJetsIdx.push_back(std::make_tuple(jetIter,nsvtxTk,msvtx,csvVal));
       pfJetsP4.push_back(jp4);
-      npfjets  += 1;
-      npfbjets += (csvVal>csvWP);
+      npfjets++;
+      npfbjets += isBTagged;
+      if(isBTagged && fabs(jp4.Eta())>1.2) allPFBInEB=false;
+
+      if(npfjets==1){
+        float dphi2ll(ll.DeltaPhi(jp4));
+        if(fabs(dphi2ll)>2*TMath::Pi()/3.) hasAwayPFJet=true;
+      }
     }
-    std::sort(matchedJetsIdx.begin(), matchedJetsIdx.end(), orderByBtagInfo);
     std::sort(pfJetsIdx.begin(),      pfJetsIdx.end(),      orderByBtagInfo);
+
+
+    //finalize analysing track jets
+    std::sort(matchedJetsIdx.begin(), matchedJetsIdx.end(), orderByBtagInfo);
+    bool allTkBInEB(true),hasAwayTkJet(false);
+    float ntkjets(0),nbtkjets(0);
+    for(size_t ij=0; ij<min(matchedJetsIdx.size(),size_t(2)); ij++) {     
+      int idx(std::get<0>(matchedJetsIdx[ij]));
+      float csv(std::get<3>(matchedJetsIdx[ij]));
+      TLorentzVector p4=tkJetsP4[idx];
+      if(p4.Pt()<15) continue;
+      bool isBTagged(csv>csvWP);
+      ntkjets ++;
+      nbtkjets += isBTagged;
+      if(isBTagged && fabs(p4.Eta())>1.2) allTkBInEB=false;
+      
+      if(ntkjets==1){
+        float dphi2ll(ll.DeltaPhi(p4));
+        if(fabs(dphi2ll)>2*TMath::Pi()/3.) hasAwayTkJet=true;
+      }
+    }
 
 
     //fill control histograms
     std::vector<TString> categs;
-    categs.push_back(dilCat);
-    if(isZ) categs.push_back(dilCat+"Z");
     bool l1EE(fabs(selLeptons[0].Eta())>barrelEndcapEta[1]);
     bool l2EE(fabs(selLeptons[1].Eta())>barrelEndcapEta[1]);
     TString etaCateg( (!l1EE && !l2EE) ? "BB" : (((l1EE && !l2EE) || (!l1EE && l2EE)) ? "EB" : "EE" ) );
+
+    categs.push_back(dilCat);
     categs.push_back(dilCat+etaCateg);
     if(isZ) {
+      categs.push_back(dilCat+"Z");
       categs.push_back(dilCat+etaCateg+"Z");
-      
-      //add Z recoiling against jet category here to monitor b-tagging
+      if(ntkjets==1 && hasAwayTkJet) {
+        categs.push_back(dilCat+"Zawaytkj");
+        categs.push_back(dilCat+etaCateg+"Zawaytkj");
+      }
+      if(npfjets==1 && hasAwayPFJet) {
+        categs.push_back(dilCat+"Zawaypfj");
+        categs.push_back(dilCat+etaCateg+"Zawaypfj");
+      }
     }
+    
+
+    std::vector<TString> addCategs;
 
     //monitor also after run where EE scale shift changed
     if(!isPP){
+      addCategs.clear();
       TString pf( fForestTree.run>=firstEEScaleShiftRun ? "after" : "before" );
-      std::vector<TString> addCategs;
-      for(auto c : categs) {addCategs.push_back(c); addCategs.push_back(c+pf); }
+      for(auto c : categs) {
+        addCategs.push_back(c); addCategs.push_back(c+pf); 
+      }
       categs=addCategs;
     }
+
+    //monitor according to the b-tagging category
+    addCategs.clear();
     TString pfbcat(Form("%dpfb",min(npfbjets,2)));
     TString tkbcat(Form("%dpfb",min(npfbjets,2))); //fixme this should be based on the number of b-tagged track jets
-    std::vector<TString> addCategs;
     for(auto c : categs) { 
       addCategs.push_back(c); 
       addCategs.push_back(c+tkbcat); 
       addCategs.push_back(c+pfbcat); 
     }
+    categs=addCategs;
+
+    //monitor according to the centrality of the jets and electrons
+    if(allEleInEB) {
+      addCategs.clear();
+      for(auto c: categs) {
+        addCategs.push_back(c);
+        if(allTkBInEB) addCategs.push_back(c+"alltkeb");
+        if(allPFBInEB) addCategs.push_back(c+"allpfeb");
+      }
+    }
+
 
     float plotWgt(isMC ? fForestTree.weight : 1.0);
-    ht.fill( "l1pt",      selLeptons[0].Pt(),                       plotWgt, categs);
-    ht.fill( "l2pt",      selLeptons[1].Pt(),                       plotWgt, categs);
-    ht.fill( "l1eta",     fabs(selLeptons[0].Eta()),                plotWgt, categs);
-    ht.fill( "l2eta",     fabs(selLeptons[1].Eta()),                plotWgt, categs);
+    ht.fill( "l1pt",      selLeptons[0].Pt(),                          plotWgt, categs);
+    ht.fill( "l2pt",      selLeptons[1].Pt(),                          plotWgt, categs);
+    ht.fill( "l1eta",     fabs(selLeptons[0].Eta()),                   plotWgt, categs);
+    ht.fill( "l2eta",     fabs(selLeptons[1].Eta()),                   plotWgt, categs);
     ht.fill( "dphill",    fabs(selLeptons[0].DeltaPhi(selLeptons[1])), plotWgt, categs);
-    ht.fill( "mll",       ll.M(),                                plotWgt, categs);
-    ht.fill( "ptll",      ll.Pt(),                               plotWgt, categs);
-    ht.fill( "npfjets",   npfjets,   plotWgt, categs);
-    ht.fill( "npfbjets",  npfbjets,  plotWgt, categs);
+    ht.fill( "detall",    fabs(selLeptons[0].Eta()-selLeptons[1].Eta()), plotWgt, categs);
+    ht.fill( "mll",       ll.M(),                                      plotWgt, categs);
+    ht.fill( "ptll",      ll.Pt(),                                     plotWgt, categs);
+    ht.fill( "npfjets",   npfjets,                                     plotWgt, categs);
+    ht.fill( "npfbjets",  npfbjets,                                    plotWgt, categs);
+    ht.fill( "ntkjets",   ntkjets,                                     plotWgt, categs);
+    ht.fill( "ntkbjets",  nbtkjets,                                    plotWgt, categs);
 
     for(size_t ij=0; ij<min(matchedJetsIdx.size(),size_t(2)); ij++) {     
-      TLorentzVector p4=tkJetsP4[ij];
-      float ntks(std::get<1>(matchedJetsIdx[ij]));
+      int idx(std::get<0>(matchedJetsIdx[ij]));
+      int ntks(std::get<1>(matchedJetsIdx[ij]));
       float svm(std::get<2>(matchedJetsIdx[ij]));
       float csv(std::get<3>(matchedJetsIdx[ij]));
+      TLorentzVector p4=tkJetsP4[idx];
+
       TString ppf(ij==1 ? "1" : "2");
-      ht.fill( "tk"+ppf+"jpt",      p4.Pt(),        plotWgt, categs);
-      ht.fill( "tk"+ppf+"jeta",     fabs(p4.Eta()), plotWgt, categs);
-      ht.fill( "tk"+ppf+"jsvtxm",   ntks,           plotWgt, categs);
-      ht.fill( "tk"+ppf+"jsvtxntk", svm,            plotWgt, categs);
-      ht.fill( "tk"+ppf+"jcsv",     csv,            plotWgt, categs);
+      ht.fill( "tk"+ppf+"jbalance",  p4.Pt()/ll.Pt(),  plotWgt, categs);
+      ht.fill( "tk"+ppf+"jpt",      p4.Pt(),          plotWgt, categs);
+      ht.fill( "tk"+ppf+"jeta",     fabs(p4.Eta()),   plotWgt, categs);
+      ht.fill( "tk"+ppf+"jsvtxm",   ntks,             plotWgt, categs);
+      ht.fill( "tk"+ppf+"jsvtxntk", svm,              plotWgt, categs);
+      ht.fill( "tk"+ppf+"jcsv",     csv,              plotWgt, categs);
     }
     ht.fill( "tkrho", tkrho,            plotWgt, categs);
     
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
-      TLorentzVector p4=pfJetsP4[ij];
-      float ntks(std::get<1>(pfJetsIdx[ij]));
+      int idx(std::get<0>(pfJetsIdx[ij]));
+      int ntks(std::get<1>(pfJetsIdx[ij]));
       float svm(std::get<2>(pfJetsIdx[ij]));
       float csv(std::get<3>(pfJetsIdx[ij]));
+      TLorentzVector p4=pfJetsP4[idx];
       TString ppf(ij==1 ? "1" : "2");
-      ht.fill( "pf"+ppf+"jpt",      p4.Pt(),        plotWgt, categs);
-      ht.fill( "pf"+ppf+"jeta",     fabs(p4.Eta()), plotWgt, categs);
-      ht.fill( "pf"+ppf+"jsvtxm",   ntks,           plotWgt, categs);
-      ht.fill( "pf"+ppf+"jsvtxntk", svm,            plotWgt, categs);
-      ht.fill( "pf"+ppf+"jcsv",     csv,            plotWgt, categs);
+      ht.fill( "pf"+ppf+"jbalance",  p4.Pt()/ll.Pt(), plotWgt, categs);
+      ht.fill( "pf"+ppf+"jpt",      p4.Pt(),         plotWgt, categs);
+      ht.fill( "pf"+ppf+"jeta",     fabs(p4.Eta()),  plotWgt, categs);
+      ht.fill( "pf"+ppf+"jsvtxm",   ntks,            plotWgt, categs);
+      ht.fill( "pf"+ppf+"jsvtxntk", svm,             plotWgt, categs);
+      ht.fill( "pf"+ppf+"jcsv",     csv,             plotWgt, categs);
     }
 
   }
