@@ -5,5 +5,15 @@ runTTto2Lselection --in /eos/cms/store/group/phys_top/PbPbTTbar_2018/SkimElectro
 ```
 To process a full directory use condor
 ```
-debug the script
+dir=/eos/cms/store/group/phys_top/PbPbTTbar_2018/
+out=`pwd`/plots/Chunks
+tag=SkimElectrons_PromptRecov1
+python scripts/launchAnalysis.py $dir/$tag $out $tag  
+```
+Massive processing example
+```
+tags=(SkimElectrons  SkimElectrons_PromptRecov1  SkimMuons_PromptRecov1  SkimMuons_PromptRecov2)
+for tag in ${tags[@]}; do
+    python scripts/launchAnalysis.py $dir/$tag $out $tag;
+done   
 ```

@@ -2,45 +2,30 @@ import ROOT
 import os,sys
 from subprocess import Popen, PIPE
 
-if len(sys.argv)<3:
-    print "python scripts/launchAnalysis.py input output [queue=local/condor_queue]"
+if len(sys.argv)<4:
+    print "python scripts/launchAnalysis.py input output tag"
     exit(-1)
 
 input=sys.argv[1]
 output=sys.argv[2]
-queue=sys.argv[2] if len(sys.argv)>3 else 'local'
-queue='tomorrow'
+tag=sys.argv[3]
 
-#check if library is there
-if not os.path.isfile('runTTto2Lselection_C.so'):
-    print 'Compiling analysis as shared library'
-    ROOT.gSystem.Load("/cvmfs/cms.cern.ch/slc6_amd64_gcc700/external/fastjet/3.3.0-omkpbe/lib/libfastjet.so")
-    ROOT.gSystem.CompileMacro('test/runTTto2Lselection.C','fk')
 
+#prepare output
+os.system('mkdir -p %s'%output)
 
 #create condor jobs
-if queue != 'local':
-    print 'Condor submission script is condor.sub'
-    with open('condor.sub','w') as c:
-        c.write('executable  = %s/HeavyIonsAnalysis/topskim/scripts/wrapAnalysis.sh\n'%os.environ['CMSSW_BASE'])
-        c.write('output      = condor.out\n')
-        c.write('error       = condor.err\n')
-        c.write('log         = condor.log\n')
-        c.write('arguments   = $(chunk) %s\n'%output)
-        c.write('queue chunk matching (%s/*.root)\n'%input)
+print 'Condor submission script is condor_%s.sub'%tag
+with open('condor_%s.sub'%tag,'w') as c:
+    c.write('executable  = %s/src/HeavyIonsAnalysis/topskim/scripts/wrapAnalysis.sh\n'%os.environ['CMSSW_BASE'])
+    c.write('output      = condor_%s.out\n'%tag)
+    c.write('error       = condor_%s.err\n'%tag)
+    c.write('log         = condor_%s.log\n'%tag)
+    
+    chunks=os.listdir(input)
+    for i in range(len(chunks)):
+        c.write('arguments   = {0}/{1} {2}/{3}_{4}.root\n'.format(input,chunks[i],output,tag,i))
+        c.write('queue 1\n')
 
-
-
-#nJobs=nEvts/evtsPerJob
-#if nJobs*nEvts<evtsPerJob : nJobs=nJobs+1
-#print '#events=',nEvts,'will be analysed in',nEvts/evtsPerJob,'jobs'
-#
-#os.system('mkdir -p '+outDir)
-#for i in xrange(0,nJobs):
-#    startEvt=i*evtsPerJob
-#    outFile='%s/%s/%s_%d.root'%(cwd,outDir,tag,startEvt)    
-#    cmd='bsub -q %s %s/scripts/wrapLocalAnalysisRun.sh %f %d %d %d %s %s' % (queue,cwd,cone,isPbPb,evtsPerJob,startEvt,outFile,vecList)
-#    #cmd='%s/scripts/wrapLocalAnalysisRun.sh %f %d %d %d %s %s' % (cwd,cone,isPbPb,evtsPerJob,startEvt,outFile,vecList)
-#    os.system(cmd)
-#    
-#print 'The output of the jobs will be named as %s_i.root and can be found in %s'%(tag,outDir)
+#submit to condor
+os.system('condor_submit condor_%s.sub'%tag)
