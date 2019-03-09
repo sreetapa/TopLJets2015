@@ -14,7 +14,7 @@ output=${3}
 
 extraOpts=""
 isMC=${4}
-if [ ! -z "${MC}" ]; then
+if [ ! -z "${isMC}" ]; then
    extraOpts="${extraOpts} --mc"
 fi
 isPP=${5}

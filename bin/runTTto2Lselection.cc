@@ -63,6 +63,11 @@ int main(int argc, char* argv[])
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
 
+  if(isPP)
+    cout << "Treating as a pp collision file" << endl;
+  if(isMC)
+    cout << "Treating as a MC file" << endl;
+
   //book some histograms
   HistTool ht;
 
@@ -108,7 +113,7 @@ int main(int argc, char* argv[])
   ForestPFCands fForestPF(pfCandTree_p);
 
   //configure jets
-  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t"      : "akPu4CaloJetAnalyzer/t");
+  TChain *jetTree_p     = new TChain(isPP ? "ak4PFJetAnalyzer/t" : "akPu4PFJetAnalyzer/t");
   jetTree_p->Add(inURL);
   ForestJets fForestJets(jetTree_p);
 
