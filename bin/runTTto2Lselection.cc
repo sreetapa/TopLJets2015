@@ -155,9 +155,6 @@ int main(int argc, char* argv[])
     if(!isMC) {
       if(mtrig==0 && isSingleMuPD) continue;
       if(etrig==0 && isSingleElePD) continue;
-
-      //cross triggers are taken only from the single muon PD to avoid double counting
-      if(etrig>0 && mtrig>0 && isSingleElePD) continue;
     }
 
     //apply global filters
@@ -256,6 +253,11 @@ int main(int argc, char* argv[])
       }
     }
     else if(muP4.size()>0 && eP4.size()>0 && (etrig>0 || mtrig>0)) {
+
+      //simultaneous triggering only in the single muon PD
+      //to avoid double counting
+      if(!isMC && etrig>0 && mtrig>0 && isSingleElePD) continue;
+
       dilCode=11*13;
       ll=muP4[0]+eP4[0];
       selLeptons.push_back(muP4[0]);
