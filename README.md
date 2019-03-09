@@ -1,10 +1,9 @@
-#Pre-compile macro
-
-Check where fastjet is using `scram tool info fastjet`.
-Load it in ROOT and then compile the macro
-
+#Running the analysis
+To run on a single file can give the command
 ```
-root -l
-gSystem->Load("/cvmfs/cms.cern.ch/slc6_amd64_gcc700/external/fastjet/3.3.0-omkpbe/lib/libfastjet.so")
-.L runTTto2Lselection.C++
+runTTto2Lselection --in /eos/cms/store/group/phys_top/PbPbTTbar_2018/SkimElectrons_PromptRecov1/Chunk_0_ext0.root --out test.root
+```
+To process a full directory use condor
+```
+debug the script
 ```

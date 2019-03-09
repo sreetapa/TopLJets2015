@@ -1,4 +1,5 @@
 <use name="fastjet"/>
+<use name="fastjet-contrib"/>
 <use name="root"/>
 <environment>
   <bin name="runTTto2Lselection" file="runTTto2Lselection.cc"></bin>

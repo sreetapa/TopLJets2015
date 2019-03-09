@@ -17,6 +17,7 @@
 #include "HeavyIonsAnalysis/topskim/include/HistTool.h"
 
 #include "fastjet/ClusterSequence.hh"
+#include "fastjet/tools/JetMedianBackgroundEstimator.hh"
 
 const bool isDebug = true;
 
@@ -71,6 +72,7 @@ int main(int argc, char* argv[])
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",20,20,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",20,0,200));
   ht.addHist("dphill",   new TH1F("dphill",   ";#Delta#phi(l,l');Events",20,0,3.15));
+  ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,25));
   for(size_t i=0; i<2; i++) {
     TString pf(i==0 ? "tk" : "pf");
     ht.addHist("n"+pf+"jets",    new TH1F("n"+pf+"jets",    ";Jet multiplicity;Events",5,0,5));
@@ -129,6 +131,7 @@ int main(int argc, char* argv[])
   Float_t wgtSum(0);
   int nEntries = (int)lepTree_p->GetEntries();  
   int entryDiv = ((int)(nEntries/20));    
+  cout << inURL << " has " << nEntries << "events to process" << endl;
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0 && nEntries >= 10000) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
@@ -191,7 +194,7 @@ int main(int argc, char* argv[])
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
       p4.SetPtEtaPhiM(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),0.000511);
-      if(!isPP && fForestTree.run>=firstEEScaleShiftRun) p4 *=eeScaleShift;         
+      if(!isPP && fForestTree.run<=firstEEScaleShiftRun) p4 *=eeScaleShift;         
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
       if(p4.Pt() < lepPtCut) continue;	      
@@ -258,16 +261,30 @@ int main(int argc, char* argv[])
     std::vector<PseudoJet> pseudoParticles;
     ForestPFCands fForestPF(pfCandTree_p);
     for(size_t ipf=0; ipf<fForestPF.pfId->size(); ipf++) {
-      int id(fForestPF.pfId->at(ipf));
-      cout << id << endl;
+      int id(abs(fForestPF.pfId->at(ipf)));
+
+      //pass all neutrals
+      if(id==22 || id==130 || id==2112 || id==1 || id==2) continue;
       TLorentzVector p4(0,0,0,0);
       p4.SetPtEtaPhiM(fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),fForestPF.pfM->at(ipf));
+
+      //some basic kinematic cuts
+      if(p4.Pt()<0.5) continue;
+      if(fabs(p4.Eta())<2.5) continue;
+
       PseudoJet ip=PseudoJet(p4.Px(),p4.Py(),p4.Pz(),p4.E());
       ip.set_user_index( ipf );
       pseudoParticles.push_back( ip );
     }
     JetDefinition jet_def(antikt_algorithm, 0.4);
     ClusterSequence cs(pseudoParticles, jet_def);
+    Selector sel_rapmax = SelectorAbsRapMax(2.4);
+    JetDefinition jet_def_for_rho(kt_algorithm,0.5);
+    AreaDefinition area_def(active_area,GhostedAreaSpec(2.4+1.));
+    JetMedianBackgroundEstimator bge(sel_rapmax, jet_def_for_rho, area_def);
+    bge.set_particles(pseudoParticles);
+    float tkrho=bge.rho();
+
     std::vector<PseudoJet> tkjets = sorted_by_pt(cs.inclusive_jets());
     for(auto j : tkjets) {
       if(j.constituents().size()<2) continue;
@@ -357,7 +374,8 @@ int main(int argc, char* argv[])
       ht.fill( "tk"+ppf+"jsvtxntk", svm,            plotWgt, categs);
       ht.fill( "tk"+ppf+"jcsv",     csv,            plotWgt, categs);
     }
-
+    ht.fill( "tkrho", tkrho,            plotWgt, categs);
+    
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
       TLorentzVector p4=pfJetsP4[ij];
       float ntks(std::get<1>(matchedJetsIdx[ij]));
