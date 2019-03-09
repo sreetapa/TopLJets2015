@@ -50,6 +50,7 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 //
 int main(int argc, char* argv[])
 {
+  bool blind(true);
   TString inURL,outURL;
   bool isMC(false),isPP(false);
   for(int i=1;i<argc;i++){
@@ -298,23 +299,31 @@ int main(int argc, char* argv[])
     }
 
     if(ll.M()<20) continue;
-    TString dilCat(dilCode==11*13 ? "em" : (dilCode==11*11 ? "ee" : "mm") );
-    if(charge>0) dilCat="ss"+dilCat;
     bool isZ( dilCode!=11*13 && fabs(ll.M()-91)<15 );
+
+    if(blind) {
+      if(!isMC && !isZ && charge<0 && fForestTree.run>=326887) continue;
+    }
+    
+    TString dilCat("em");
+    if(dilCode==11*11) { dilCat=isZ ? "zee" : "ee"; }
+    if(dilCode==13*13) { dilCat=isZ ? "zee" : "ee"; }    
+    if(charge>0) dilCat="ss"+dilCat;
 
     //build track jets from PF candidates
     //cross-clean with respect to the selected leptons
     //require at least 2 constituents
     std::vector<TLorentzVector> tkJetsP4;
     std::vector<PseudoJet> pseudoParticles;
-    ForestPFCands fForestPF(pfCandTree_p);
+    TLorentzVector p4(0,0,0,0);
     for(size_t ipf=0; ipf<fForestPF.pfId->size(); ipf++) {
       int id(abs(fForestPF.pfId->at(ipf)));
 
       //pass all neutrals
-      if(id==22 || id==130 || id==2112 || id==1 || id==2) continue;
-      TLorentzVector p4(0,0,0,0);
-      p4.SetPtEtaPhiM(fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),fForestPF.pfM->at(ipf));
+      if(id==22 || id==130 || id==2112 || id==1 || id==2) continue;      
+
+      //treat all as pions...
+      p4.SetPtEtaPhiM(fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),0.13957);
 
       //some basic kinematic cuts
       if(p4.Pt()<0.5) continue;
@@ -407,22 +416,27 @@ int main(int argc, char* argv[])
 
     //fill control histograms
     std::vector<TString> categs;
-    bool l1EE(fabs(selLeptons[0].Eta())>barrelEndcapEta[1]);
-    bool l2EE(fabs(selLeptons[1].Eta())>barrelEndcapEta[1]);
-    TString etaCateg( (!l1EE && !l2EE) ? "BB" : (((l1EE && !l2EE) || (!l1EE && l2EE)) ? "EB" : "EE" ) );
-
     categs.push_back(dilCat);
-    categs.push_back(dilCat+etaCateg);
-    if(isZ) {
-      categs.push_back(dilCat+"Z");
-      categs.push_back(dilCat+etaCateg+"Z");
-      if(ntkjets==1 && hasAwayTkJet) {
-        categs.push_back(dilCat+"Zawaytkj");
-        categs.push_back(dilCat+etaCateg+"Zawaytkj");
-      }
-      if(npfjets==1 && hasAwayPFJet) {
-        categs.push_back(dilCat+"Zawaypfj");
-        categs.push_back(dilCat+etaCateg+"Zawaypfj");
+
+    //monitor where the electrons are reconstructed
+    if(dilCode==11*11 || dilCode==11*13){
+
+      bool l1EE(fabs(selLeptons[0].Eta())>barrelEndcapEta[1]);
+      bool l2EE(fabs(selLeptons[1].Eta())>barrelEndcapEta[1]);
+      TString etaCateg(l2EE ? "E" : "B");
+      if(dilCode==11*11) etaCateg += l1EE ? "E" : "B";
+
+      categs.push_back(dilCat+etaCateg);
+      if(isZ) {
+        categs.push_back(dilCat+etaCateg+"Z");
+        if(ntkjets==1 && hasAwayTkJet) {
+          categs.push_back(dilCat+"Zawaytkj");
+          categs.push_back(dilCat+etaCateg+"Zawaytkj");
+        }
+        if(npfjets==1 && hasAwayPFJet) {
+          categs.push_back(dilCat+"Zawaypfj");
+          categs.push_back(dilCat+etaCateg+"Zawaypfj");
+        }
       }
     }
     

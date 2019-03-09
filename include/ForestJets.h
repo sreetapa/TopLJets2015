@@ -11,6 +11,7 @@
 #include <TROOT.h>
 #include <TChain.h>
 #include <TFile.h>
+#include <TLeaf.h>
 
 // Header file for the classes stored in the TTree if any.
 
@@ -86,13 +87,31 @@ public :
     t->SetBranchAddress("pdiscr_csvV1", pdiscr_csvV1);
     t->SetBranchAddress("pdiscr_csvV2", pdiscr_csvV2);
     t->SetBranchAddress("nsvtx", nsvtx);
-    t->SetBranchAddress("svtxntrk", svtxntrk);
-    t->SetBranchAddress("svtxdl", svtxdl);
-    t->SetBranchAddress("svtxdls", svtxdls);
-    t->SetBranchAddress("svtxdl2d", svtxdl2d);
-    t->SetBranchAddress("svtxdls2d", svtxdls2d);
-    t->SetBranchAddress("svtxm", svtxm);
-    t->SetBranchAddress("svtxpt", svtxpt);
+    TLeaf *leaf = t->GetLeaf("svtxntrk");
+    if(leaf) {
+      TString lname(leaf->GetTypeName());
+      if(lname=="Int_t") {
+        t->SetBranchAddress("svtxntrk", svtxntrk);
+        t->SetBranchAddress("svtxdl", svtxdl);
+        t->SetBranchAddress("svtxdls", svtxdls);
+        t->SetBranchAddress("svtxdl2d", svtxdl2d);
+        t->SetBranchAddress("svtxdls2d", svtxdls2d);
+        t->SetBranchAddress("svtxm", svtxm);
+        t->SetBranchAddress("svtxpt", svtxpt);
+      }else {
+        /*
+          t->SetBranchAddress("svType", &svtype_vec);
+          t->SetBranchAddress("svtxntrk", &svtxntrk_vec);
+          t->SetBranchAddress("svtxdl", &svtxdl_vec);
+          t->SetBranchAddress("svtxdls", &svtxdls_vec);
+          t->SetBranchAddress("svtxdl2d", &svtxdl2d_vec);
+          t->SetBranchAddress("svtxdls2d", &svtxdls2d_vec);
+          t->SetBranchAddress("svtxm", &svtxm_vec);
+          t->SetBranchAddress("svtxpt", &svtxpt_vec);
+        */
+      }
+    }
+
     t->SetBranchAddress("svtxmcorr", svtxmcorr);
     t->SetBranchAddress("nIPtrk", nIPtrk);
     t->SetBranchAddress("nselIPtrk", nselIPtrk);
@@ -185,6 +204,14 @@ public :
    Float_t         svtxdls2d[85];   //[nref]
    Float_t         svtxm[85];   //[nref]
    Float_t         svtxpt[85];   //[nref]
+   std::vector<std::vector<int> > *svtype_vec;
+   std::vector<std::vector<int> > *svtxntrk_vec;
+   std::vector<std::vector<float> > *svtxdl_vec;
+   std::vector<std::vector<float> > *svtxdls_vec;
+   std::vector<std::vector<float> > *svtxdl2d_vec;
+   std::vector<std::vector<float> > *svtxdls2d_vec;
+   std::vector<std::vector<float> > *svtxm_vec;
+   std::vector<std::vector<float> > *svtxpt_vec;
    Float_t         svtxmcorr[85];   //[nref]
    Int_t           nIPtrk[85];   //[nref]
    Int_t           nselIPtrk[85];   //[nref]
