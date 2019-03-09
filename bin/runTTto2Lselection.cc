@@ -67,14 +67,18 @@ int main(int argc, char* argv[])
   HistTool ht;
 
   //generic histograms
-  ht.addHist("l1pt",     new TH1F("l1pt",     ";Leading lepton transverse momentum [GeV];Events",20,20,200));
-  ht.addHist("l1eta",    new TH1F("l1eta",    ";Leading lepton pseudo-rapidity;Events",20,0,2.5));
-  ht.addHist("l2pt",     new TH1F("l2pt",     ";Sub-lead lepton transverse momentum [GeV];Events",20,20,200));
-  ht.addHist("l2eta",    new TH1F("l2eta",    ";Sub-lead lepton pseudo-rapidity;Events",20,0,2.5));
+  for(int i=0; i<2; i++) {
+    TString pf(Form("l%d",i+1));
+    ht.addHist(pf+"pt",        new TH1F(pf+"pt",       ";Lepton transverse momentum [GeV];Events",20,20,200));
+    ht.addHist(pf+"eta",       new TH1F(pf+"eta",      ";Lepton pseudo-rapidity;Events",20,0,2.5));
+    ht.addHist(pf+"chreliso",  new TH1F(pf+"chreliso", ";Relative PF charged isolation;Leptons",20,0,2.0));
+    ht.addHist(pf+"phoreliso", new TH1F(pf+"phoreliso",";Relative PF photon isolation;Leptons",20,0,1.0));
+    ht.addHist(pf+"neureliso", new TH1F(pf+"neureliso",";Relative PF neutral hadron isolation;Leptons",20,0,1.0));
+  }
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",20,20,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",20,0,200));
   ht.addHist("dphill",   new TH1F("dphill",   ";#Delta#phi(l,l');Events",20,0,3.15));
-  ht.addHist("etall",    new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,5));
+  ht.addHist("detall",   new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,5));
   ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,25));
   for(size_t i=0; i<2; i++) {
     TString pf(i==0 ? "tk" : "pf");
@@ -91,9 +95,6 @@ int main(int argc, char* argv[])
       ht.addHist(pf+ppf+"jcsv",        new TH1F(pf+ppf+"jcsv",     ";CSVv2;Events",25,0,1));
     }
   }
-  ht.addHist("chreliso",  new TH1F("chreliso", ";Relative PF charged isolation;Leptons",20,0,2.0));
-  ht.addHist("phoreliso", new TH1F("phoreliso",";Relative PF photon isolation;Leptons",20,0,1.0));
-  ht.addHist("neureliso", new TH1F("neureliso",";Relative PF neutral hadron isolation;Leptons",20,0,1.0));
 
   //configure leptons
   TChain *lepTree_p     = new TChain(isPP ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
@@ -240,12 +241,19 @@ int main(int argc, char* argv[])
     int dilCode(0);
     int charge(0);    
     TLorentzVector ll;
+    vector< std::tuple<float,float,float> > liso;
     if(muP4.size()>1 && mtrig>0) {
       dilCode=13*13;
       ll=muP4[0]+muP4[1];
       selLeptons.push_back(muP4[0]);
       selLeptons.push_back(muP4[1]);
       charge=fForestMu.muCharge->at(muIdx[0])*fForestMu.muCharge->at(muIdx[1]);
+      for(size_t i=0; i<2; i++){
+        float chIso( fForestMu.muPFChIso->at(muIdx[i]) );
+        float phoIso( fForestMu.muPFPhoIso->at(muIdx[i]) );
+        float neutIso( fForestMu.muPFNeuIso->at(muIdx[i]) );        
+        liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+      }
     }
     else if(muP4.size()>0 && eP4.size()>0 && (etrig>0 || mtrig>0)) {
       dilCode=11*13;
@@ -253,6 +261,14 @@ int main(int argc, char* argv[])
       selLeptons.push_back(muP4[0]);
       selLeptons.push_back(eP4[0]);
       charge=fForestMu.muCharge->at(muIdx[0])*fForestEle.eleCharge->at(eleIdx[0]);      
+      float chIso( fForestMu.muPFChIso->at(muIdx[0]) );
+      float phoIso( fForestMu.muPFPhoIso->at(muIdx[0]) );
+      float neutIso( fForestMu.muPFNeuIso->at(muIdx[0]) );        
+      liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+      chIso=fForestEle.elePFChIso03->at(eleIdx[0]);
+      phoIso=fForestEle.elePFPhoIso03->at(eleIdx[0]);
+      neutIso=fForestEle.elePFNeuIso03->at(eleIdx[0]);        
+      liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
     }
     else if(eP4.size()>1 && etrig>0) {
       dilCode=11*11;
@@ -260,6 +276,12 @@ int main(int argc, char* argv[])
       selLeptons.push_back(eP4[0]);
       selLeptons.push_back(eP4[1]);
       charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
+      for(size_t i=0; i<2; i++){
+        float chIso=fForestEle.elePFChIso03->at(eleIdx[i]);
+        float phoIso=fForestEle.elePFPhoIso03->at(eleIdx[i]);
+        float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);        
+        liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+      }
     }else{
       continue;
     }
@@ -429,10 +451,19 @@ int main(int argc, char* argv[])
 
 
     float plotWgt(isMC ? fForestTree.weight : 1.0);
-    ht.fill( "l1pt",      selLeptons[0].Pt(),                          plotWgt, categs);
-    ht.fill( "l2pt",      selLeptons[1].Pt(),                          plotWgt, categs);
-    ht.fill( "l1eta",     fabs(selLeptons[0].Eta()),                   plotWgt, categs);
-    ht.fill( "l2eta",     fabs(selLeptons[1].Eta()),                   plotWgt, categs);
+    for(int i=0; i<2; i++) {
+      TString pf(Form("l%d",i+1));
+      float pt(selLeptons[i].Pt());
+      ht.fill(pf+"pt",        pt,                         plotWgt, categs);
+      ht.fill(pf+"eta",       fabs(selLeptons[i].Eta()),  plotWgt, categs);
+      float chiso(std::get<0>(liso[i]));
+      float phoiso(std::get<1>(liso[i]));
+      float neuiso(std::get<2>(liso[i]));
+      ht.fill(pf+"chreliso",  chiso/pt,  plotWgt, categs);
+      ht.fill(pf+"phoreliso", phoiso/pt,  plotWgt, categs);
+      ht.fill(pf+"neureliso", neuiso/pt,  plotWgt, categs);
+    }
+
     ht.fill( "dphill",    fabs(selLeptons[0].DeltaPhi(selLeptons[1])), plotWgt, categs);
     ht.fill( "detall",    fabs(selLeptons[0].Eta()-selLeptons[1].Eta()), plotWgt, categs);
     ht.fill( "mll",       ll.M(),                                      plotWgt, categs);
@@ -480,14 +511,20 @@ int main(int argc, char* argv[])
   if(outURL!=""){
     TFile *fOut=TFile::Open(outURL,"RECREATE");
     fOut->cd();
+
+    //store the weight sum for posterior normalization
+    if(isMC) {
+      TH1D *wgtH=new TH1D("wgtsum","wgtsum",1,0,1);
+      wgtH->SetBinContent(1,wgtSum);
+      wgtH->SetDirectory(fOut);
+      wgtH->Write();
+    }
     for (auto& it : ht.getPlots())  { 
       if(it.second->GetEntries()==0) continue;
-      if(isMC && wgtSum!=0) it.second->Scale(1./wgtSum);
       it.second->SetDirectory(fOut); it.second->Write(); 
     }
     for (auto& it : ht.get2dPlots())  { 
       if(it.second->GetEntries()==0) continue;
-      if(isMC && wgtSum!=0) it.second->Scale(1./wgtSum);
       it.second->SetDirectory(fOut); it.second->Write(); 
     }
     fOut->Close();
