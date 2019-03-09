@@ -61,6 +61,9 @@ int main(int argc, char* argv[])
     else if(arg.find("--ss")!=string::npos)              { doSameSign=true;  }
   }
 
+  bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
+  bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
+
   //book some histograms
   HistTool ht;
 
@@ -122,10 +125,10 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchStatus("HLT_HIEle20_WPLoose_Gsf_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIEle20_WPLoose_Gsf_v1",&etrig);
   }else{
-    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v",1);
-    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v",&mtrig);
-    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v",1);
-    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v",&etrig);    
+    hltTree_p->SetBranchStatus("HLT_HIL3Mu15_v1",1);
+    hltTree_p->SetBranchAddress("HLT_HIL3Mu15_v1",&mtrig);
+    hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
+    hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
   }
     
   Float_t wgtSum(0);
@@ -147,6 +150,13 @@ int main(int argc, char* argv[])
     //first of all require a trigger
     int trig=etrig+mtrig;
     if(trig==0) continue;
+    if(!isMC) {
+      if(mtrig==0 && isSingleMuPD) continue;
+      if(etrig==0 && isSingleElePD) continue;
+
+      //cross triggers are taken only from the single muon PD to avoid double counting
+      if(etrig>0 && mtrig>0 && isSingleElePD) continue;
+    }
 
     //apply global filters
     if(!isPP){
@@ -243,7 +253,7 @@ int main(int argc, char* argv[])
       selLeptons.push_back(eP4[0]);
       selLeptons.push_back(eP4[1]);
       charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
-    } else{
+    }else{
       continue;
     }
 
@@ -378,9 +388,9 @@ int main(int argc, char* argv[])
     
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
       TLorentzVector p4=pfJetsP4[ij];
-      float ntks(std::get<1>(matchedJetsIdx[ij]));
-      float svm(std::get<2>(matchedJetsIdx[ij]));
-      float csv(std::get<3>(matchedJetsIdx[ij]));
+      float ntks(std::get<1>(pfJetsIdx[ij]));
+      float svm(std::get<2>(pfJetsIdx[ij]));
+      float csv(std::get<3>(pfJetsIdx[ij]));
       TString ppf(ij==1 ? "1" : "2");
       ht.fill( "pf"+ppf+"jpt",      p4.Pt(),        plotWgt, categs);
       ht.fill( "pf"+ppf+"jeta",     fabs(p4.Eta()), plotWgt, categs);
