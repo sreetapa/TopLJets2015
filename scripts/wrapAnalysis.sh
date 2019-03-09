@@ -2,27 +2,28 @@
 
 HOME=`pwd`
 
-#determine CMSSW config
-SCRIPT=$(readlink -f $0)
-SCRIPTPATH=`dirname $SCRIPT`
-ARCH=${SCRIPTPATH##/*/}
-WORKDIR=${SCRIPTPATH}/..
-
-#configure environment
-cd $WORKDIR
-export SCRAM_ARCH=$ARCH
+#set environment
+CMSSW=${1}
+cd ${CMSSW}/src
 eval `scram r -sh`
 
+#run the job from the home directory
 cd $HOME
-input=${1}
-output=${2}
+input=${2}
+output=${3}
 
-#FIXME 
 extraOpts=""
-isMC=${3}
-isPP=${4}
-doSameSign=${5}
+isMC=${4}
+if [ ! -z "${MC}" ]; then
+   extraOpts="${extraOpts} --mc"
+fi
+isPP=${5}
+if [ ! -z "${isPP}" ]; then
+    extraOpts="${extraOpts} --pp"
+fi
+opts="--in ${input} --out tto2l.root ${extraOpts}"
 
-runTTto2Lselection --in ${input} --out tto2l.root ${extraOpts}
+echo "Calling runTTto2Lselection with [${opts}]"
+runTTto2Lselection ${opts}
 cp -v tto2l.root ${output}
 

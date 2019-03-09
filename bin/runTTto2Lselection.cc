@@ -51,14 +51,13 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 int main(int argc, char* argv[])
 {
   TString inURL,outURL;
-  bool isMC(false),isPP(false),doSameSign(false);
+  bool isMC(false),isPP(false);
   for(int i=1;i<argc;i++){
     string arg(argv[i]);
     if(arg.find("--in")!=string::npos && i+1<argc)       { inURL=TString(argv[i+1]); i++;}
     else if(arg.find("--out")!=string::npos && i+1<argc) { outURL=TString(argv[i+1]); i++;}
     else if(arg.find("--mc")!=string::npos)              { isMC=true;  }
     else if(arg.find("--pp")!=string::npos)              { isPP=true;  }
-    else if(arg.find("--ss")!=string::npos)              { doSameSign=true;  }
   }
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
@@ -258,11 +257,9 @@ int main(int argc, char* argv[])
     }
 
     if(ll.M()<20) continue;
-    bool isOS(charge<0);
-    if(doSameSign ^ isOS) continue;
-
-    bool isZ( dilCode!=11*13 && fabs(ll.M()-91)<15 );
     TString dilCat(dilCode==11*13 ? "em" : (dilCode==11*11 ? "ee" : "mm") );
+    if(charge>0) dilCat="ss"+dilCat;
+    bool isZ( dilCode!=11*13 && fabs(ll.M()-91)<15 );
 
     //build track jets from PF candidates
     //cross-clean with respect to the selected leptons
@@ -359,6 +356,14 @@ int main(int argc, char* argv[])
       std::vector<TString> addCategs;
       for(auto c : categs) {addCategs.push_back(c); addCategs.push_back(c+pf); }
       categs=addCategs;
+    }
+    TString pfbcat(Form("%dpfb",min(npfbjets,2)));
+    TString tkbcat(Form("%dpfb",min(npfbjets,2))); //fixme this should be based on the number of b-tagged track jets
+    std::vector<TString> addCategs;
+    for(auto c : categs) { 
+      addCategs.push_back(c); 
+      addCategs.push_back(c+tkbcat); 
+      addCategs.push_back(c+pfbcat); 
     }
 
     float plotWgt(isMC ? fForestTree.weight : 1.0);
