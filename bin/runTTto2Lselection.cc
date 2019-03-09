@@ -4,17 +4,17 @@
 #include "TMath.h"
 #include "TLorentzVector.h"
 #include "TChain.h"
+#include "TSystem.h"
 
 #include <string>
 #include <vector>
 
-#include "ForestTreeHeaders/ForestHiTree.h"
-#include "ForestTreeHeaders/ForestElectrons.h"
-#include "ForestTreeHeaders/ForestMuons.h"
-#include "ForestTreeHeaders/ForestPFCands.h"
-#include "ForestTreeHeaders/ForestJets.h"
-
-#include "ForestTreeHeaders/HistTool.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestHiTree.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestElectrons.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestMuons.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestPFCands.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestJets.h"
+#include "HeavyIonsAnalysis/topskim/include/HistTool.h"
 
 #include "fastjet/ClusterSequence.hh"
 
@@ -30,6 +30,7 @@ const int firstEEScaleShiftRun = 327402;
 const float barrelEndcapEta[2]={1.4442,1.5660};
 const float csvWP = 0.8838;
 
+using namespace std;
 using namespace fastjet;
 
 // index, ntks in svtx, m svtx, csv
@@ -46,12 +47,19 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 
 
 //
-void runTTto2Lselection(TString outURL,
-                        TString inURL,
-                        bool isMC = false, 
-                        bool isPP=true,
-                        bool doSameSign=false)
+int main(int argc, char* argv[])
 {
+  TString inURL,outURL;
+  bool isMC(false),isPP(false),doSameSign(false);
+  for(int i=1;i<argc;i++){
+    string arg(argv[i]);
+    if(arg.find("--in")!=string::npos && i+1<argc)       { inURL=TString(argv[i+1]); i++;}
+    else if(arg.find("--out")!=string::npos && i+1<argc) { outURL=TString(argv[i+1]); i++;}
+    else if(arg.find("--mc")!=string::npos)              { isMC=true;  }
+    else if(arg.find("--pp")!=string::npos)              { isPP=true;  }
+    else if(arg.find("--ss")!=string::npos)              { doSameSign=true;  }
+  }
+
   //book some histograms
   HistTool ht;
 
@@ -382,5 +390,5 @@ void runTTto2Lselection(TString outURL,
     fOut->Close();
   }
 
-  return;
+  return 0;
 }

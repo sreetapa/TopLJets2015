@@ -1,0 +1,6 @@
+<use name="fastjet"/>
+<use name="root"/>
+<environment>
+  <bin name="runTTto2Lselection" file="runTTto2Lselection.cc"></bin>
+</environment>
+<Flags CXXFLAGS="-g"/>

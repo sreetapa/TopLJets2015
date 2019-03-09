@@ -5,7 +5,7 @@
 #include <TChain.h>
 #include <TFile.h>
 
-#include "vector"
+#include <vector>
 
 class ForestPFCands {
 public :
@@ -24,16 +24,16 @@ public :
     }
   ~ForestPFCands() {}
 
-   vector<int>     *pfId;
-   vector<float>   *pfPt;
-   vector<float>   *pfEta;
-   vector<float>   *pfPhi;
-   vector<float>   *pfM;
-   vector<int>     *trkAlgo;
-   vector<float>   *trkPtError;
-   vector<float>   *trkNHit;
-   vector<float>   *trkChi2;
-   vector<float>   *trkNdof;
+   std::vector<int>     *pfId;
+   std::vector<float>   *pfPt;
+   std::vector<float>   *pfEta;
+   std::vector<float>   *pfPhi;
+   std::vector<float>   *pfM;
+   std::vector<int>     *trkAlgo;
+   std::vector<float>   *trkPtError;
+   std::vector<float>   *trkNHit;
+   std::vector<float>   *trkChi2;
+   std::vector<float>   *trkNdof;
 };
 
 
