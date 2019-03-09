@@ -152,10 +152,6 @@ int main(int argc, char* argv[])
     //first of all require a trigger
     int trig=etrig+mtrig;
     if(trig==0) continue;
-    if(!isMC) {
-      if(mtrig==0 && isSingleMuPD) continue;
-      if(etrig==0 && isSingleElePD) continue;
-    }
 
     //apply global filters
     if(!isPP){
@@ -240,6 +236,10 @@ int main(int argc, char* argv[])
     TLorentzVector ll;
     vector< std::tuple<float,float,float> > liso;
     if(muP4.size()>1 && mtrig>0) {
+
+      //muon final states from the muon PD only
+      if(!isMC && !isSingleMuPD) continue;
+
       dilCode=13*13;
       ll=muP4[0]+muP4[1];
       selLeptons.push_back(muP4[0]);
@@ -273,6 +273,10 @@ int main(int argc, char* argv[])
       liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
     }
     else if(eP4.size()>1 && etrig>0) {
+
+      //ee final states from the electron PD only 
+      if(!isMC && !isSingleElePD) continue;
+
       dilCode=11*11;
       ll=eP4[0]+eP4[1];
       selLeptons.push_back(eP4[0]);
