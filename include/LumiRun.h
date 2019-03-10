@@ -152,7 +152,7 @@ class LumiRun {
         it!=lr_.end();
         it++) {
       i+=1;
-      h->GetXaxis()->SetBinLabel(i,Form("%d",i));
+      h->GetXaxis()->SetBinLabel(i,Form("%d",it->first));
     }              
     return h;
   }

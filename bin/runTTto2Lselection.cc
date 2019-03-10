@@ -74,7 +74,7 @@ int main(int argc, char* argv[])
   //book some histograms
   HistTool ht;
 
-  if(!isMC) ht.addHist("runvsrate",lumiTool.getLumiMonitor());
+  if(!isMC) ht.addHist("ratevsrun",lumiTool.getLumiMonitor());
 
   //generic histograms
   for(int i=0; i<2; i++) {
@@ -176,8 +176,10 @@ int main(int argc, char* argv[])
       cenBin=0.5*fForestTree.hiBin;
       Int_t runBin=lumiTool.getRunBin(fForestTree.run);
       Float_t lumi=lumiTool.getLumi(fForestTree.run);
-      if(etrig>0) ht.fill("runvsrate",runBin,lumi,"e");
-      if(mtrig>0) ht.fill("runvsrate",runBin,lumi,"m");
+      if(lumi>0.){
+        if(etrig>0) ht.fill("ratevsrun",runBin,1./lumi,"e");
+        if(mtrig>0) ht.fill("ratevsrun",runBin,1./lumi,"m");
+      }
     }
 
 

@@ -69,7 +69,7 @@ class HistTool {
     if(cat!=""){
       TString newTitle=cat+"_"+title;
       if(not all2dPlots_.count(newTitle)) {
-        std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
+        //std::cout << "Histogram " << title << " for cat=" << cat << " not yet started, adding now." << std::endl;
         all2dPlots_[newTitle]=(TH2 *)all2dPlots_[title]->Clone(newTitle);
         all2dPlots_[newTitle]->SetDirectory(0);
         all2dPlots_[newTitle]->Reset("ICE");
