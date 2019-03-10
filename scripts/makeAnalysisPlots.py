@@ -140,7 +140,7 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
 
 url=sys.argv[1]
 
-#showRateVsRun(url)
+showRateVsRun(url)
 
 cats=[]
 cats+=['zee','zmm']

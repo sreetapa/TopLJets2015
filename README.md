@@ -36,7 +36,7 @@ python scripts/mergeOutputs.py plots
 
 Plot the results
 ```
-FIXME
+python scripts/makeAnalysisPlots.py plots/
 ```
 
 ## Luminosity
