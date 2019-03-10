@@ -38,3 +38,11 @@ Plot the results
 ```
 FIXME
 ```
+
+## Luminosity
+
+```
+export PATH=$HOME/.local/bin:/cvmfs/cms-bril.cern.ch/brilconda/bin:$PATH
+json=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions18/HI/PromptReco/Cert_326381-327564_HI_PromptReco_Collisions18_JSON.txt
+brilcalc lumi -b "STABLE BEAMS" -u /ub -i $json
+```

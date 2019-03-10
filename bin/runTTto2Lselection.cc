@@ -14,6 +14,7 @@
 #include "HeavyIonsAnalysis/topskim/include/ForestMuons.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestPFCands.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestJets.h"
+#include "HeavyIonsAnalysis/topskim/include/LumiRun.h"
 #include "HeavyIonsAnalysis/topskim/include/HistTool.h"
 
 #include "fastjet/ClusterSequence.hh"
@@ -63,6 +64,7 @@ int main(int argc, char* argv[])
 
   bool isSingleMuPD( !isMC && inURL.Contains("SkimMuons"));
   bool isSingleElePD( !isMC && inURL.Contains("SkimElectrons"));
+  LumiRun lumiTool;
 
   if(isPP)
     cout << "Treating as a pp collision file" << endl;
@@ -72,6 +74,8 @@ int main(int argc, char* argv[])
   //book some histograms
   HistTool ht;
 
+  if(!isMC) ht.addHist("runvsrate",lumiTool.getLumiMonitor());
+
   //generic histograms
   for(int i=0; i<2; i++) {
     TString pf(Form("l%d",i+1));
@@ -80,6 +84,9 @@ int main(int argc, char* argv[])
     ht.addHist(pf+"chreliso",  new TH1F(pf+"chreliso", ";Relative PF charged isolation;Leptons",20,0,2.0));
     ht.addHist(pf+"phoreliso", new TH1F(pf+"phoreliso",";Relative PF photon isolation;Leptons",20,0,1.0));
     ht.addHist(pf+"neureliso", new TH1F(pf+"neureliso",";Relative PF neutral hadron isolation;Leptons",20,0,1.0));
+    ht.addHist(pf+"chrelisovscen",  new TH2F(pf+"chrelisovscen", ";Relative PF charged isolation;Centrality bin;Leptons",20,0,2.0,5,0,100));
+    ht.addHist(pf+"phorelisovscen", new TH2F(pf+"phorelisovscen",";Relative PF photon isolation;Centrality bin;Leptons",20,0,1.0,5,0,100));
+    ht.addHist(pf+"neurelisovscen", new TH2F(pf+"neurelisovscen",";Relative PF neutral hadron isolation;Centrality bin;Leptons",20,0,1.0,5,0,100));
   }
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",20,20,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",20,0,200));
@@ -163,6 +170,16 @@ int main(int argc, char* argv[])
     if(!isPP){
       if(TMath::Abs(fForestTree.vz) > 15) continue;
     }
+
+    float cenBin=0;
+    if(!isMC){
+      cenBin=0.5*fForestTree.hiBin;
+      Int_t runBin=lumiTool.getRunBin(fForestTree.run);
+      Float_t lumi=lumiTool.getLumi(fForestTree.run);
+      if(etrig>0) ht.fill("runvsrate",runBin,lumi,"e");
+      if(mtrig>0) ht.fill("runvsrate",runBin,lumi,"m");
+    }
+
 
     //select muons
     std::vector<int> muIdx,noIdMuIdx;
@@ -487,6 +504,9 @@ int main(int argc, char* argv[])
       ht.fill(pf+"chreliso",  chiso/pt,  plotWgt, categs);
       ht.fill(pf+"phoreliso", phoiso/pt,  plotWgt, categs);
       ht.fill(pf+"neureliso", neuiso/pt,  plotWgt, categs);
+      ht.fill2D(pf+"chrelisovscen",  chiso/pt,   cenBin, plotWgt, categs);
+      ht.fill2D(pf+"phorelisovscen", phoiso/pt,  cenBin, plotWgt, categs);
+      ht.fill2D(pf+"neurelisovscen", neuiso/pt,  cenBin, plotWgt, categs);
     }
 
     ht.fill( "dphill",    fabs(selLeptons[0].DeltaPhi(selLeptons[1])), plotWgt, categs);

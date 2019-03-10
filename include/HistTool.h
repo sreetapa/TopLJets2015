@@ -27,7 +27,7 @@ class HistTool {
 
   inline void fill(TString title, double value, double weight,std::vector<TString> cats){
     for(auto &c : cats)
-    fill(title,value,weight,c);
+      fill(title,value,weight,c);
   }
 
   inline void fill(TString title, double value, double weight,TString cat="") {
@@ -52,6 +52,11 @@ class HistTool {
     }
     
     allPlots_[title]->Fill(value, weight);
+  }
+
+  inline void fill2D(TString title, double valueX, double valueY, double weight,std::vector<TString> cats){
+    for(auto &c : cats)
+      fill2D(title,valueX,valueY,weight,c);
   }
 
   inline void fill2D(TString title, double valueX, double valueY, double weight,TString cat="") {
