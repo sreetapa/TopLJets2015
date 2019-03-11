@@ -2,16 +2,17 @@ import ROOT
 import os,sys
 import numpy as np
 from HeavyIonsAnalysis.topskim.Plot import *
+from HeavyIonsAnalysis.topskim.RinRout import *
 
 LUMI=1618.466*(1e-6)
 CHLUMI={'mm':1587.941*(1e-6),
-        'ee':1664.148*(1e-6)}
+        'ee':1664.148*(1e-6),
+        'blind':446.931*(1e-6)}
 
 ABEAM=208
 SAMPLES=[
     ('WJetsToLNu_TuneCP5_5020GeV-amcatnloFXFX-pythia8',        'W',                    21159*(ABEAM**2)*LUMI,          17),         
     ('DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8', 'Z/#gamma^{*}',         2010*(ABEAM**2)*LUMI,           "#fdc086"),         
-    ('Skim',                                                   'Z/#gamma^{*} (data)',  None,                           "#fdc086"),
     ('TT_TuneCP5_5p02TeV-powheg-pythia8',                      't#bar{t}',             69*(ABEAM**2)*LUMI,             633),
     ('ST_tW_antitop_5f_NoFullyHadronicDecays_hdampDOWN_TuneCP5_5p02TeV-powheg-pythia8', 'tW', 3.04*(ABEAM**2)*LUMI,    "#7fc97f"),
     ('ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5down_5p02TeV-powheg-pythia8',           'tW', 3.04*(ABEAM**2)*LUMI,    "#7fc97f"),
@@ -59,7 +60,7 @@ def getDataSummedUp(url,catList=['e','m'],pname='ratevsrun',tag='Skim',normByWgt
                 else:
                     histos[c].Add(h)
             except Exception as e:
-                print e
+                #print e
                 pass
         fIn.Close()
 
@@ -93,7 +94,7 @@ def showRateVsRun(url,catList=['e','m']):
     p.show(outDir='./',lumi=LUMI)
 
 
-def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
+def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
 
     """makes a standard control plot using the ROOT files in 'url' 
     'cat' and 'pname' are used to build the full plot name
@@ -107,8 +108,8 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
         ilumi=LUMI
         if 'mm' in icat : ilumi=CHLUMI['mm']
         if 'ee' in icat : ilumi=CHLUMI['ee']
+        if not 'z' in icat: ilumi=CHLUMI['blind']
         if title=='Combinatorial (data)': icat='ss'+cat
-        if title=='Z/#gamma^{*} (data)': continue
         normByWgtSum=True if scale else False
 
         plots=getDataSummedUp(url,[icat],pname,tag,normByWgtSum)
@@ -116,7 +117,14 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
         h=plots[icat]
         if scale :
             scale *= ilumi/LUMI
+            if dyFromData:                
+                print icat,icat.find('mm'),icat.find('ee'),icat.find('em')
+                if icat.find('mm') in [0,1]: scale*=dySF['mm'][0]
+                if icat.find('ee') in [0,1]: scale*=dySF['ee'][0]
+                if icat.find('em') in [0,1]: scale*=dySF['em'][0]            
             h.Scale(scale)
+        if title=='Combinatorial (data)' and not 'z' in icat:
+            h.Scale(CHLUMI['blind']/LUMI)
 
         if not title in plotsPerProc:
             plotsPerProc[title]=h.Clone('%s_%s'%(pname,title))               
@@ -145,20 +153,174 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
     p.show(outDir='./',lumi=ilumi)
     p.reset()
 
+def computeDYScaleFactors(url):
+
+    cats=['zee','zmm','ee','mm','em']
+    data=getDataSummedUp(url,cats,'mll','Skim',False)
+    dy=getDataSummedUp(url,cats,'mll','DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8',True)
+
+    nin={}
+    nout={}
+    ndyin={}
+    ndyout={}
+    intErr=ROOT.Double(0)
+    for c in ['ee','mm','em']:        
+        if c != 'em':
+            data[c].Add(data['z'+c])
+            dy[c].Add(dy['z'+c])
+            dy[c].Scale(2010*(ABEAM**2)*LUMI)
+            
+        binMin,binMax=data[c].GetXaxis().FindBin(20),data[c].GetNbinsX()+1
+        bin1,bin2=data[c].GetXaxis().FindBin(76),data[c].GetXaxis().FindBin(106)
+
+        nin[c]=(data[c].Integral(bin1,bin2),0.)
+        nout[c]=(data[c].Integral(binMin,binMax),0.)
+
+        dyCts=dy[c].IntegralAndError(bin1,bin2,intErr)
+        ndyin[c]=(dyCts,intErr)
+        dyCts=dy[c].IntegralAndError(binMin,binMax,intErr)
+        ndyout[c]=(dyCts,intErr)
+
+
+    #table a la TOP-16-015 
+    dySF={}
+    dySF['ee']=doRinRout(nin,nout,ndyin,ndyout,'ee','mm')
+    dySF['mm']=doRinRout(nin,nout,ndyin,ndyout,'mm','ee')
+    sfProd=dySF['ee'][0]*dySF['mm'][0]
+    sfProdUnc=ROOT.TMath.Sqrt((dySF['ee'][0]*dySF['mm'][1])**2+(dySF['mm'][0]*dySF['ee'][1])**2)        
+    dySF['em']=(ROOT.TMath.Sqrt(sfProd),0.5*sfProdUnc/ROOT.TMath.Sqrt(sfProd))
+    print 'SF_{em}=%f +/- %f'%(dySF['em'][0],dySF['em'][1])
+    return dySF
+
+def compareElectrons(url,dist):
+
+    cats=['zee','zeeBB','zeeEB','zeeEE']
+    cats+=['zeeafter','zeeBBafter','zeeEBafter','zeeEEafter']
+    cats+=['zeebefore','zeeBBbefore','zeeEBbefore','zeeEEbefore']    
+    data=getDataSummedUp(url,cats,dist,'Skim',False)
+    for key in data: 
+        tot=data[key].Integral()
+        data[key].Scale(1./tot)
+        data[key].GetYaxis().SetTitle('PDF')
+
+    for pname,triplet,title in [('period',['zee','zeeafter','zeebefore'],['inclusive','run#geq327402','run<327402']),
+                                ('region',['zee','zeeBB','zeeEB','zeeEE'],['inclusive','barrel-barrel','barrel-endcap','endcap-endcap'])]:
+
+        p=Plot('%s_%s'%(dist,pname),com='5.02 TeV')
+        p.doPoissonErrorBars=False
+        p.add(data[triplet[0]],title=title[0],color=1,isData=True,spImpose=False,isSyst=False)
+        p.add(data[triplet[1]],title=title[1],color=2,isData=False,spImpose=False,isSyst=False)
+        p.add(data[triplet[2]],title=title[2],color=8,isData=False,spImpose=False,isSyst=False)
+        if len(triplet)>3:
+            p.add(data[triplet[3]],title=title[3],color=6,isData=False,spImpose=False,isSyst=False)
+        p.show(outDir='./',lumi=LUMI,noStack=True)
+
+def doIsolationROCs(url,ch='ee'):
+    cats=['z'+ch,'ssz'+ch]
+    data={}
+    for dist in ['l1chreliso','l1phoreliso','l1neureliso', 
+                 'l2chreliso','l2phoreliso','l2neureliso',
+                 'l1chrelisovscen','l2chrelisovscen']:
+        data[dist]=getDataSummedUp(url,cats,dist,'Skim',False)
+
+    #add the two leptons and subtract to the signal
+    rocs=[]
+
+    color={'ch':1,'pho':2,'neu':8}
+    for iso in ['ch','pho','neu']:
+        sig=data['l1%sreliso'%iso]['z'+ch].Clone('sig'+iso)
+        sig.Add(data['l2%sreliso'%iso]['z'+ch])
+        bkg=data['l1%sreliso'%iso]['ssz'+ch].Clone('bkg'+iso)
+        bkg.Add(data['l2%sreliso'%iso]['ssz'+ch])
+        sig.Add(bkg,-1)
+    
+        rocs.append( ROOT.TGraph() )
+        tot_sig=sig.Integral()
+        tot_bkg=bkg.Integral()
+        nbins=sig.GetNbinsX()
+        best_effsig=0
+        best_xbin=nbins+1
+        for xbin in range(nbins+1):
+            effsig=sig.Integral(0,xbin+1)/tot_sig
+            rocs[-1].SetPoint(xbin,effsig,bkg.Integral(0,xbin+1)/tot_bkg)
+            if abs(effsig-0.9)>abs(best_effsig-0.9) : continue
+            best_effsig=effsig
+            best_xbin=xbin
+        print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
+        rocs[-1].SetTitle(iso)
+        rocs[-1].SetLineColor(color[iso])
+        rocs[-1].SetLineWidth(2)
+
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetLeftMargin(0.12)
+    c.SetRightMargin(0.03)
+    c.SetTopMargin(0.05)
+    c.SetBottomMargin(0.11)
+    mg=ROOT.TMultiGraph()
+    for g in rocs: mg.Add(g,'l')
+    mg.Draw('al')
+    mg.GetXaxis().SetRangeUser(0,1)
+    mg.GetYaxis().SetRangeUser(0,1)
+    mg.GetYaxis().SetTitle('Signal efficency')
+    mg.GetYaxis().SetTitle('Background efficency')
+    leg=c.BuildLegend(0.15,0.94,0.4,0.8)
+    leg.SetBorderSize(0)
+    leg.SetTextFont(42)
+    leg.SetTextSize(0.05)
+    leg.SetFillStyle(0)
+    txt=ROOT.TLatex()
+    txt.SetNDC(True)
+    txt.SetTextFont(42)
+    txt.SetTextSize(0.045)
+    txt.SetTextAlign(12)
+    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+    for ext in ['png','pdf']:
+        c.SaveAs('isorocs_%s.%s'%(ch,ext))
+
+    sig=data['l1chrelisovscen']['z'+ch].Clone('sig'+iso)
+    sig.Add(data['l2chrelisovscen']['z'+ch])
+    bkg=data['l1chrelisovscen']['ssz'+ch].Clone('bkg'+iso)
+    bkg.Add(data['l2chrelisovscen']['ssz'+ch])
+    sig.Add(bkg,-1)
+    c.SetRightMargin(0.12)
+    for h,name in [(sig,'sig'),(bkg,'bkg')]:
+        px=h.ProfileX()
+        px.SetMarkerStyle(20)
+        func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
+        px.Fit(func)
+        h.Draw('colz')
+        px.Draw('e1same')
+        txt=ROOT.TLatex()
+        txt.SetNDC(True)
+        txt.SetTextFont(42)
+        txt.SetTextSize(0.045)
+        txt.SetTextAlign(12)
+        txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+        for ext in ['png','pdf']:
+            c.SaveAs('%s_chrelisovscen.%s'%(name,ext))
+
+
+
 
 url=sys.argv[1]
 
 #showRateVsRun(url)
+dySF=computeDYScaleFactors(url)
+#compareElectrons(url,'mll')
+#compareElectrons(url,'ptll')
+#compareElectrons(url,'detall')
+
+doIsolationROCs(url,'ee')
 
 cats=[]
-cats+=['zee','zmm']
-cats+=['zeeBB','zeeEE']
-#cats+=['zeeZawaypfj']
+cats+=['zee','zmm','mm','em','ee']
 for cat in cats:
-    for d in ['mll','ptll','dphill', 'detall',
-              'l1pt','l1eta','l1chreliso','l1phoreliso','l1neureliso',
-              'l2pt','l2eta','l2chreliso','l2phoreliso','l2neureliso',
-              'npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv',
-              'ntkjets','ntkbjets','tk1jpt','tk1jeta','tk1jcsv','tk2jpt','tk2jeta','tk2jcsv'
-              ]:
-        makeControlPlot(url,cat,d,dyFromData=True,combFromData=True)
+    for d in ['mll','ptll','dphill', 'detall','l1pt','l1eta','l2pt','l2eta']:        
+        continue
+        makeControlPlot(url,cat,d,True,True,dySF)
+
+
+              #'l2chreliso','l2phoreliso','l2neureliso',
+              #'l1chreliso','l1phoreliso','l1neureliso',
+              #'npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv',
+              #'ntkjets','ntkbjets','tk1jpt','tk1jeta','tk1jcsv','tk2jpt','tk2jeta','tk2jcsv'

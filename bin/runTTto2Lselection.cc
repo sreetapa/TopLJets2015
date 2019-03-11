@@ -287,6 +287,7 @@ int main(int argc, char* argv[])
       selLeptons.push_back(eP4[0]);
       charge=fForestMu.muCharge->at(muIdx[0])*fForestEle.eleCharge->at(eleIdx[0]);      
       float chIso( fForestMu.muPFChIso->at(muIdx[0]) );
+
       float phoIso( fForestMu.muPFPhoIso->at(muIdx[0]) );
       float neutIso( fForestMu.muPFNeuIso->at(muIdx[0]) );        
       liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
