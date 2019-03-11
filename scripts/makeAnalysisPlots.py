@@ -4,6 +4,9 @@ import numpy as np
 from HeavyIonsAnalysis.topskim.Plot import *
 
 LUMI=1618.466*(1e-6)
+CHLUMI={'mm':1587.941*(1e-6),
+        'ee':1664.148*(1e-6)}
+
 ABEAM=208
 SAMPLES=[
     ('WJetsToLNu_TuneCP5_5020GeV-amcatnloFXFX-pythia8',        'W',                    21159*(ABEAM**2)*LUMI,          17),         
@@ -101,6 +104,9 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
     for tag,title,scale,color in SAMPLES:
 
         icat=cat
+        ilumi=LUMI
+        if 'mm' in icat : ilumi=CHLUMI['mm']
+        if 'ee' in icat : ilumi=CHLUMI['ee']
         if title=='Combinatorial (data)': icat='ss'+cat
         if title=='Z/#gamma^{*} (data)': continue
         normByWgtSum=True if scale else False
@@ -108,7 +114,9 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
         plots=getDataSummedUp(url,[icat],pname,tag,normByWgtSum)
         if not icat in plots: continue
         h=plots[icat]
-        if scale : h.Scale(scale)
+        if scale :
+            scale *= ilumi/LUMI
+            h.Scale(scale)
 
         if not title in plotsPerProc:
             plotsPerProc[title]=h.Clone('%s_%s'%(pname,title))               
@@ -134,13 +142,13 @@ def makeControlPlot(url,cat,pname,dyFromData=True,combFromData=True):
               spImpose=False,
               isSyst=False)
     p.savelog=True
-    p.show(outDir='./',lumi=LUMI)
+    p.show(outDir='./',lumi=ilumi)
     p.reset()
 
 
 url=sys.argv[1]
 
-showRateVsRun(url)
+#showRateVsRun(url)
 
 cats=[]
 cats+=['zee','zmm']
@@ -151,6 +159,6 @@ for cat in cats:
               'l1pt','l1eta','l1chreliso','l1phoreliso','l1neureliso',
               'l2pt','l2eta','l2chreliso','l2phoreliso','l2neureliso',
               'npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv',
-              #'ntkjets','ntkbjets','tk1jbalance','tk1jpt','tk1jeta','tk1jcsv','tk2jbalance','tk2jpt','tk2jeta','tk2jcsv','tkrho'
+              'ntkjets','ntkbjets','tk1jpt','tk1jeta','tk1jcsv','tk2jpt','tk2jeta','tk2jcsv'
               ]:
         makeControlPlot(url,cat,d,dyFromData=True,combFromData=True)

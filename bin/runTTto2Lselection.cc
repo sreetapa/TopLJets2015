@@ -22,8 +22,6 @@
 
 const bool isDebug = true;
 
-const float jetPtCut  = 30.;
-const float jetEtaCut = 2.4;
 const float lepPtCut  = 20.;
 const float lepEtaCut = 2.1;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
@@ -352,6 +350,7 @@ int main(int argc, char* argv[])
       ip.set_user_index( ipf );
       pseudoParticles.push_back( ip );
     }
+
     JetDefinition jet_def(antikt_algorithm, 0.4);
     ClusterSequence cs(pseudoParticles, jet_def);
     Selector sel_rapmax = SelectorAbsRapMax(2.4);
@@ -369,6 +368,7 @@ int main(int argc, char* argv[])
       if(p4.DeltaR(selLeptons[0])<0.4 || p4.DeltaR(selLeptons[1])<0.4) continue;
       if(fabs(p4.Eta())>2.4) continue;
       if(p4.Pt()<15) continue;
+      tkJetsP4.push_back(p4);
       ntkjets ++;
     }
    
@@ -541,7 +541,9 @@ int main(int argc, char* argv[])
       int ntks(std::get<1>(pfJetsIdx[ij]));
       float svm(std::get<2>(pfJetsIdx[ij]));
       float csv(std::get<3>(pfJetsIdx[ij]));
-      TLorentzVector p4=pfJetsP4[idx];
+      TLorentzVector p4(0,0,0,0);
+      p4.SetPtEtaPhiM( fForestJets.jtpt[idx],fForestJets.jteta[idx],fForestJets.jtphi[idx],fForestJets.jtm[idx]);
+      
       TString ppf(ij==1 ? "1" : "2");
       ht.fill( "pf"+ppf+"jbalance", p4.Pt()/ll.Pt(), plotWgt, categs);
       ht.fill( "pf"+ppf+"jpt",      p4.Pt(),         plotWgt, categs);
