@@ -116,13 +116,39 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
         if not icat in plots: continue
         h=plots[icat]
         if scale :
+
             scale *= ilumi/LUMI
-            if dyFromData:                
-                print icat,icat.find('mm'),icat.find('ee'),icat.find('em')
-                if icat.find('mm') in [0,1]: scale*=dySF['mm'][0]
-                if icat.find('ee') in [0,1]: scale*=dySF['ee'][0]
-                if icat.find('em') in [0,1]: scale*=dySF['em'][0]            
+
+            #special treatment for DY (scale and shape)
+            zShapeCat=''
+            if dyFromData and title=='Z/#gamma^{*}':                                              
+                if icat.find('mm') in [0,1]: 
+                    scale*=dySF['mm'][0]
+                    zShapeCat='zmm' if icat[0]=='m' else ''
+                if icat.find('ee') in [0,1]: 
+                    scale*=dySF['ee'][0]
+                    zShapeCat='zee' if icat[0]=='e' else ''
+                if icat.find('em') in [0,1]: 
+                    scale*=dySF['em'][0]
+                    zShapeCat='zmm' if icat[0]=='e' else ''
+
             h.Scale(scale)
+            
+            #change shape
+            if len(zShapeCat)>0:
+                zplot=getDataSummedUp(url,[zShapeCat],pname,'Skim',False)[zShapeCat]
+                sszplot=getDataSummedUp(url,['ss'+zShapeCat],pname,'Skim',False)['ss'+zShapeCat]
+                zplot.Add(sszplot,-1)
+                totz=zplot.Integral()
+                if totz>0:
+                    zplot.Scale(h.Integral()/totz)
+                    h.Reset('ICE')
+                    h.Add(zplot)
+                zplot.Delete()
+                sszplot.Delete()
+
+        plots=getDataSummedUp(url,[icat],pname,tag,normByWgtSum)
+
         if title=='Combinatorial (data)' and not 'z' in icat:
             h.Scale(CHLUMI['blind']/LUMI)
 
@@ -359,14 +385,11 @@ cats=[]
 cats+=['zee','zmm','mm','em','ee']
 cats+=['zeehpur','zmmhpur','mmhpur','emhpur','eehpur']
 for cat in cats:
-    # for d in ['l2chreliso','l2phoreliso','l2neureliso','l1chreliso','l1phoreliso','l1neureliso']:   
-    for d in ['mll','ptll','dphill', 'detall','l1pt','l1eta','l2pt','l2eta']:        
-        continue
+    for d in ['mll','ptll','dphill', 'detall','l1pt','l1eta','l2pt','l2eta']:                
         makeControlPlot(url,cat,d,False,True,dySF)
 
 cats=['zee','zmm','mmhpur','emhpur','eehpur']
 for cat in cats:
     for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv']:
-        continue
-        makeControlPlot(url,cat,d,False,True,dySF)
+        makeControlPlot(url,cat,d,True,True,dySF)
               
