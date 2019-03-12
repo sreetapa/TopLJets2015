@@ -218,21 +218,30 @@ def compareElectrons(url,dist):
 def doIsolationROCs(url,ch='ee'):
     cats=['z'+ch,'ssz'+ch]
     data={}
-    for dist in ['l1chreliso','l1phoreliso','l1neureliso', 
-                 'l2chreliso','l2phoreliso','l2neureliso',
-                 'l1chrelisovscen','l2chrelisovscen']:
-        data[dist]=getDataSummedUp(url,cats,dist,'Skim',False)
+    for dist in ['l1chreliso','l1chrelisop','l1chisop','l1phoreliso','l1neureliso', 
+                 'l2chreliso','l2chrelisop','l2chisop','l2phoreliso','l2neureliso',
+                 'l1chisovscen','l2chisovscen',
+                 'l1chisovschrho','l2chisovschrho',
+                 'l1chisopvscen','l2chisopvscen']:
+        data[dist]=getDataSummedUp(url,cats,dist,'SkimElectrons_Prompt',False)
 
     #add the two leptons and subtract to the signal
     rocs=[]
 
-    color={'ch':1,'pho':2,'neu':8}
-    for iso in ['ch','pho','neu']:
-        sig=data['l1%sreliso'%iso]['z'+ch].Clone('sig'+iso)
-        sig.Add(data['l2%sreliso'%iso]['z'+ch])
-        bkg=data['l1%sreliso'%iso]['ssz'+ch].Clone('bkg'+iso)
-        bkg.Add(data['l2%sreliso'%iso]['ssz'+ch])
+    isoDists={'chreliso':(1,"I_{ch}^{rel}"),
+              'chrelisop':(4,"I_{ch}^{rel'}"),
+              'chisop':(2,"I_{ch}^{'}"),
+              'phoreliso':(8,"I_{#gamma}^{rel}"),
+              'neureliso':(41,"I_{n.had.}^{rel}")}
+    for iso in ['chreliso','chrelisop','chisop','phoreliso','neureliso']:
+        print iso
+        sig=data['l1%s'%iso]['z'+ch].Clone('sig'+iso)
+        sig.Add(data['l2%s'%iso]['z'+ch])
+        bkg=data['l1%s'%iso]['ssz'+ch].Clone('bkg'+iso)
+        bkg.Add(data['l2%s'%iso]['ssz'+ch])
         sig.Add(bkg,-1)
+
+        color,title=isoDists[iso]
     
         rocs.append( ROOT.TGraph() )
         tot_sig=sig.Integral()
@@ -247,8 +256,8 @@ def doIsolationROCs(url,ch='ee'):
             best_effsig=effsig
             best_xbin=xbin
         print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
-        rocs[-1].SetTitle(iso)
-        rocs[-1].SetLineColor(color[iso])
+        rocs[-1].SetTitle(title)
+        rocs[-1].SetLineColor(color)
         rocs[-1].SetLineWidth(2)
 
     c=ROOT.TCanvas('c','c',500,500)
@@ -263,7 +272,7 @@ def doIsolationROCs(url,ch='ee'):
     mg.GetYaxis().SetRangeUser(0,1)
     mg.GetYaxis().SetTitle('Signal efficency')
     mg.GetYaxis().SetTitle('Background efficency')
-    leg=c.BuildLegend(0.15,0.94,0.4,0.8)
+    leg=c.BuildLegend(0.15,0.94,0.4,0.7)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
     leg.SetTextSize(0.05)
@@ -277,27 +286,59 @@ def doIsolationROCs(url,ch='ee'):
     for ext in ['png','pdf']:
         c.SaveAs('isorocs_%s.%s'%(ch,ext))
 
-    sig=data['l1chrelisovscen']['z'+ch].Clone('sig'+iso)
-    sig.Add(data['l2chrelisovscen']['z'+ch])
-    bkg=data['l1chrelisovscen']['ssz'+ch].Clone('bkg'+iso)
-    bkg.Add(data['l2chrelisovscen']['ssz'+ch])
-    sig.Add(bkg,-1)
     c.SetRightMargin(0.12)
-    for h,name in [(sig,'sig'),(bkg,'bkg')]:
-        px=h.ProfileX()
-        px.SetMarkerStyle(20)
-        func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
-        px.Fit(func)
-        h.Draw('colz')
-        px.Draw('e1same')
-        txt=ROOT.TLatex()
-        txt.SetNDC(True)
-        txt.SetTextFont(42)
-        txt.SetTextSize(0.045)
-        txt.SetTextAlign(12)
-        txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
-        for ext in ['png','pdf']:
-            c.SaveAs('%s_chrelisovscen.%s'%(name,ext))
+    for prof in ['chisovscen','chisovschrho','chisopvscen']:
+        sig=data['l1'+prof]['z'+ch].Clone('sig'+iso)
+        sig.Add(data['l2'+prof]['z'+ch])
+        bkg=data['l1'+prof]['ssz'+ch].Clone('bkg'+iso)
+        bkg.Add(data['l2'+prof]['ssz'+ch])
+        sig.Add(bkg,-1)
+        for h,name in [(sig,'sig'),(bkg,'bkg')]:
+            px=h.ProfileX()
+            px.SetMarkerStyle(20)            
+            if not 'isop' in prof:
+                func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
+                px.Fit(func)
+            h.Draw('colz')
+            px.Draw('e1same')
+            txt=ROOT.TLatex()
+            txt.SetNDC(True)
+            txt.SetTextFont(42)
+            txt.SetTextSize(0.045)
+            txt.SetTextAlign(12)
+            txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+            for ext in ['png','pdf']:
+                c.SaveAs('%s_%s.%s'%(name,prof,ext))
+
+
+def doJetHotSpots(url,cats):
+
+    data={}
+    for dist in ['pf1jetavsphi','pf2jetavsphi']:
+        data[dist]=getDataSummedUp(url,cats,dist,'Skim',False)
+
+    c=ROOT.TCanvas('c','c',500,500)
+    c.SetLeftMargin(0.12)
+    c.SetTopMargin(0.05)
+    c.SetBottomMargin(0.11)
+    c.SetRightMargin(0.12)
+    h=data['pf1jetavsphi'][cats[0]].Clone('etavsphi')
+    h.Reset('ICE')
+    for cat in cats:
+        h.Add(data['pf1jetavsphi'][cat])
+        h.Add(data['pf2jetavsphi'][cat])
+        print cat,h.Integral()
+    h.Draw('colz')
+    h.Rebin2D(2,2)
+    txt=ROOT.TLatex()
+    txt.SetNDC(True)
+    txt.SetTextFont(42)
+    txt.SetTextSize(0.045)
+    txt.SetTextAlign(12)
+    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+    for ext in ['png','pdf']:
+        c.SaveAs('jetetavsphi.%s'%ext)
+
 
 
 
@@ -312,15 +353,20 @@ dySF=computeDYScaleFactors(url)
 
 doIsolationROCs(url,'ee')
 
+#doJetHotSpots(url,['zmm','zee','em'])
+
 cats=[]
 cats+=['zee','zmm','mm','em','ee']
+cats+=['zeehpur','zmmhpur','mmhpur','emhpur','eehpur']
 for cat in cats:
+    # for d in ['l2chreliso','l2phoreliso','l2neureliso','l1chreliso','l1phoreliso','l1neureliso']:   
     for d in ['mll','ptll','dphill', 'detall','l1pt','l1eta','l2pt','l2eta']:        
         continue
-        makeControlPlot(url,cat,d,True,True,dySF)
+        makeControlPlot(url,cat,d,False,True,dySF)
 
-
-              #'l2chreliso','l2phoreliso','l2neureliso',
-              #'l1chreliso','l1phoreliso','l1neureliso',
-              #'npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv',
-              #'ntkjets','ntkbjets','tk1jpt','tk1jeta','tk1jcsv','tk2jpt','tk2jeta','tk2jcsv'
+cats=['zee','zmm','mmhpur','emhpur','eehpur']
+for cat in cats:
+    for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv']:
+        continue
+        makeControlPlot(url,cat,d,False,True,dySF)
+              

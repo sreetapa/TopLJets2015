@@ -33,6 +33,12 @@ const float csvWP = 0.8838;
 using namespace std;
 using namespace fastjet;
 
+//subtracts the UE pedestal from the charged isolatioin
+float subtractedChIso(float chiso,float chrho){
+  double ue=92.2-8765.8/(98.83+chrho);
+  return max(chiso-ue,0.);
+} 
+
 // index, ntks in svtx, m svtx, csv
 typedef std::tuple<int,int,float,float> BtagInfo_t;
 static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
@@ -87,14 +93,19 @@ int main(int argc, char* argv[])
   //generic histograms
   for(int i=0; i<2; i++) {
     TString pf(Form("l%d",i+1));
-    ht.addHist(pf+"pt",        new TH1F(pf+"pt",       ";Lepton transverse momentum [GeV];Events",20,20,200));
-    ht.addHist(pf+"eta",       new TH1F(pf+"eta",      ";Lepton pseudo-rapidity;Events",20,0,2.5));
-    ht.addHist(pf+"chreliso",  new TH1F(pf+"chreliso", ";Relative PF charged isolation;Leptons",20,0,2.0));
-    ht.addHist(pf+"phoreliso", new TH1F(pf+"phoreliso",";Relative PF photon isolation;Leptons",20,0,1.0));
-    ht.addHist(pf+"neureliso", new TH1F(pf+"neureliso",";Relative PF neutral hadron isolation;Leptons",20,0,1.0));
-    ht.addHist(pf+"chrelisovscen",  new TH2F(pf+"chrelisovscen", ";Relative PF charged isolation;Centrality bin;Leptons",20,0,2.0,5,0,100));
-    ht.addHist(pf+"phorelisovscen", new TH2F(pf+"phorelisovscen",";Relative PF photon isolation;Centrality bin;Leptons",20,0,1.0,5,0,100));
-    ht.addHist(pf+"neurelisovscen", new TH2F(pf+"neurelisovscen",";Relative PF neutral hadron isolation;Centrality bin;Leptons",20,0,1.0,5,0,100));
+    ht.addHist(pf+"pt",             new TH1F(pf+"pt",            ";Lepton transverse momentum [GeV];Events",20,20,200));
+    ht.addHist(pf+"eta",            new TH1F(pf+"eta",           ";Lepton pseudo-rapidity;Events",20,0,2.5));
+    ht.addHist(pf+"chreliso",       new TH1F(pf+"chreliso",      ";Relative PF charged isolation;Leptons",20,0,2.0));
+    ht.addHist(pf+"chrelisop",      new TH1F(pf+"chrelisop",     ";Relative PF charged isolation';Leptons",20,0,1.0));
+    ht.addHist(pf+"chisop",         new TH1F(pf+"chisop",        ";PF charged isolation';Leptons",20,0,50));
+    ht.addHist(pf+"phoreliso",      new TH1F(pf+"phoreliso",     ";Relative PF photon isolation;Leptons",20,0,2.0));
+    ht.addHist(pf+"neureliso",      new TH1F(pf+"neureliso",     ";Relative PF neutral hadron isolation;Leptons",20,0,2.0));
+    ht.addHist(pf+"chisovscen",     new TH2F(pf+"cisovscen",     ";Centrality bin;PF charged isolation [GeV];Leptons",5,0,100,20,0,150));
+    ht.addHist(pf+"chisovschrho",   new TH2F(pf+"chisovschrho",  ";#rho_{ch};PF charged isolation [GeV];Leptons",10,0,100,20,0,150));
+    ht.addHist(pf+"chisopvscen",    new TH2F(pf+"chisopvscen",   ";Centrality bin;PF charged isolation' [GeV];Leptons",5,0,100,20,0,50));
+    ht.addHist(pf+"chisopvschrho",  new TH2F(pf+"chisopvschrho", ";#rho_{ch};PF charged isolation' [GeV];Leptons",10,0,100,20,0,50));
+    ht.addHist(pf+"phoisovscen",    new TH2F(pf+"phoisovscen",   ";Centrality bin;PF photon isolation;Leptons",5,0,100,20,0,150));
+    ht.addHist(pf+"neuisovscen",    new TH2F(pf+"neuisovscen",   ";Centrality bin;PF neutral hadron isolation;Leptons",5,0,100,20,0,150));
   }
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",20,20,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",20,0,200));
@@ -176,10 +187,45 @@ int main(int argc, char* argv[])
     if(trig==0) continue;
 
     //apply global filters
-    if(!isPP){
-      if(TMath::Abs(fForestTree.vz) > 15) continue;
+    //if(!isPP){
+    //  if(TMath::Abs(fForestTree.vz) > 15) continue;
+    // }
+
+    //build track jets from PF candidates
+    //cross-clean with respect to the selected leptons
+    //require at least 2 constituents
+    std::vector<TLorentzVector> tkJetsP4;
+    std::vector<PseudoJet> pseudoParticles;
+    TLorentzVector p4(0,0,0,0);
+    for(size_t ipf=0; ipf<fForestPF.pfId->size(); ipf++) {
+      int id(abs(fForestPF.pfId->at(ipf)));
+
+      //pass all neutrals
+      if(id==22 || id==130 || id==2112 || id==1 || id==2) continue;      
+
+      //treat all as pions...
+      p4.SetPtEtaPhiM(fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),0.13957);
+
+      //some basic kinematic cuts
+      if(p4.Pt()<0.5) continue;
+      if(fabs(p4.Eta())>2.5) continue;
+
+      PseudoJet ip=PseudoJet(p4.Px(),p4.Py(),p4.Pz(),p4.E());
+      ip.set_user_index( ipf );
+      pseudoParticles.push_back( ip );
     }
 
+    JetDefinition jet_def(antikt_algorithm, 0.4);
+    ClusterSequence cs(pseudoParticles, jet_def);
+    Selector sel_rapmax = SelectorAbsRapMax(2.4);
+    JetDefinition jet_def_for_rho(kt_algorithm,0.5);
+    AreaDefinition area_def(active_area,GhostedAreaSpec(2.4+1.));
+    JetMedianBackgroundEstimator bge(sel_rapmax, jet_def_for_rho, area_def);
+    bge.set_particles(pseudoParticles);
+    float tkrho=bge.rho();
+
+
+    //monitor trigger and centrality
     float cenBin=0;
     if(!isMC){
       cenBin=0.5*fForestTree.hiBin;
@@ -272,7 +318,7 @@ int main(int argc, char* argv[])
     int dilCode(0);
     int charge(0);    
     TLorentzVector ll(0,0,0,0);
-    vector< std::tuple<float,float,float> > liso;
+    vector< std::tuple<float,float,float,float> > liso;
     bool hasIsoElecs(true);
     if(mu.size()>1 && mtrig>0) {
 
@@ -287,9 +333,10 @@ int main(int argc, char* argv[])
       charge=fForestMu.muCharge->at(muIdx[0])*fForestMu.muCharge->at(muIdx[1]);
       for(size_t i=0; i<2; i++){
         float chIso( fForestMu.muPFChIso->at(muIdx[i]) );
+        float chIsoP( subtractedChIso(chIso,tkrho) );
         float phoIso( fForestMu.muPFPhoIso->at(muIdx[i]) );
         float neutIso( fForestMu.muPFNeuIso->at(muIdx[i]) );        
-        liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+        liso.push_back( std::make_tuple(chIso,phoIso,neutIso,chIsoP) );
       }
     }
     else if(mu.size()>0 && ele.size()>0 && (etrig>0 || mtrig>0)) {
@@ -305,14 +352,17 @@ int main(int argc, char* argv[])
       int lIdx[2]={std::get<0>(mu[0]),std::get<0>(ele[0])};
       charge=fForestMu.muCharge->at(lIdx[0])*fForestEle.eleCharge->at(lIdx[1]);            
       float chIso( fForestMu.muPFChIso->at(lIdx[0]) );
+      float chIsoP( subtractedChIso(chIso,tkrho) );
       float phoIso( fForestMu.muPFPhoIso->at(lIdx[0]) );
       float neutIso( fForestMu.muPFNeuIso->at(lIdx[0]) );        
-      liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+      liso.push_back( std::make_tuple(chIso,phoIso,neutIso,chIsoP) );
       chIso=fForestEle.elePFChIso03->at(lIdx[1]);
-      hasIsoElecs &= (chIso<0.95);
+      chIsoP=subtractedChIso(chIso,tkrho);
+      //hasIsoElecs &= (chIso<0.95*selLeptons[0].Pt());
+      hasIsoElecs &= (chIsoP<0.25*selLeptons[0].Pt());
       phoIso=fForestEle.elePFPhoIso03->at(lIdx[1]);
       neutIso=fForestEle.elePFNeuIso03->at(lIdx[1]);        
-      liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+      liso.push_back( std::make_tuple(chIso,phoIso,neutIso,chIsoP) );
     }
     else if(ele.size()>1 && etrig>0) {
 
@@ -327,10 +377,12 @@ int main(int argc, char* argv[])
       charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
       for(size_t i=0; i<2; i++){
         float chIso=fForestEle.elePFChIso03->at(eleIdx[i]);
-        hasIsoElecs &= (chIso<0.95);
+        float chIsoP( subtractedChIso(chIso,tkrho) );
+        //hasIsoElecs &= (chIso<0.95*selLeptons[i].Pt());
+        hasIsoElecs &= (chIsoP<0.25*selLeptons[i].Pt());
         float phoIso=fForestEle.elePFPhoIso03->at(eleIdx[i]);
         float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);        
-        liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
+        liso.push_back( std::make_tuple(chIso,phoIso,neutIso,chIsoP) );
       }
     }else{
       continue;
@@ -348,39 +400,8 @@ int main(int argc, char* argv[])
     if(dilCode==13*13) { dilCat=isZ ? "zmm" : "mm"; }    
     if(charge>0) dilCat="ss"+dilCat;
 
-    //build track jets from PF candidates
-    //cross-clean with respect to the selected leptons
-    //require at least 2 constituents
-    std::vector<TLorentzVector> tkJetsP4;
-    std::vector<PseudoJet> pseudoParticles;
-    TLorentzVector p4(0,0,0,0);
-    for(size_t ipf=0; ipf<fForestPF.pfId->size(); ipf++) {
-      int id(abs(fForestPF.pfId->at(ipf)));
 
-      //pass all neutrals
-      if(id==22 || id==130 || id==2112 || id==1 || id==2) continue;      
-
-      //treat all as pions...
-      p4.SetPtEtaPhiM(fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),0.13957);
-
-      //some basic kinematic cuts
-      if(p4.Pt()<0.5) continue;
-      if(fabs(p4.Eta())>2.5) continue;
-
-      PseudoJet ip=PseudoJet(p4.Px(),p4.Py(),p4.Pz(),p4.E());
-      ip.set_user_index( ipf );
-      pseudoParticles.push_back( ip );
-    }
-
-    JetDefinition jet_def(antikt_algorithm, 0.4);
-    ClusterSequence cs(pseudoParticles, jet_def);
-    Selector sel_rapmax = SelectorAbsRapMax(2.4);
-    JetDefinition jet_def_for_rho(kt_algorithm,0.5);
-    AreaDefinition area_def(active_area,GhostedAreaSpec(2.4+1.));
-    JetMedianBackgroundEstimator bge(sel_rapmax, jet_def_for_rho, area_def);
-    bge.set_particles(pseudoParticles);
-    float tkrho=bge.rho();
-    
+    //analyze track jets
     int ntkjets(0);
     std::vector<PseudoJet> tkjets = sorted_by_pt(cs.inclusive_jets());
     for(auto j : tkjets) {
@@ -524,12 +545,18 @@ int main(int argc, char* argv[])
       float chiso(std::get<0>(liso[i]));
       float phoiso(std::get<1>(liso[i]));
       float neuiso(std::get<2>(liso[i]));
+      float chisop(std::get<3>(liso[i]));
       ht.fill(pf+"chreliso",  chiso/pt,  plotWgt, categs);
+      ht.fill(pf+"chrelisop",  chisop/pt,  plotWgt, categs);
+      ht.fill(pf+"chisop",     chisop,  plotWgt, categs);
       ht.fill(pf+"phoreliso", phoiso/pt,  plotWgt, categs);
       ht.fill(pf+"neureliso", neuiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"chrelisovscen",  chiso/pt,   cenBin, plotWgt, categs);
-      ht.fill2D(pf+"phorelisovscen", phoiso/pt,  cenBin, plotWgt, categs);
-      ht.fill2D(pf+"neurelisovscen", neuiso/pt,  cenBin, plotWgt, categs);
+      ht.fill2D(pf+"chisovscen",   cenBin, chiso,  plotWgt, categs);
+      ht.fill2D(pf+"chisovschrho", tkrho, chiso,  plotWgt, categs);
+      ht.fill2D(pf+"chisopvscen",   cenBin, chisop,  plotWgt, categs);
+      ht.fill2D(pf+"chisopvschrho", tkrho, chisop,  plotWgt, categs);
+      ht.fill2D(pf+"phoisovscen", cenBin, phoiso, plotWgt, categs);
+      ht.fill2D(pf+"neuisovscen", cenBin, neuiso, plotWgt, categs);
     }
 
     ht.fill( "dphill",    fabs(selLeptons[0].DeltaPhi(selLeptons[1])), plotWgt, categs);
