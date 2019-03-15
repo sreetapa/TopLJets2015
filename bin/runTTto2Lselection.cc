@@ -208,7 +208,7 @@ int main(int argc, char* argv[])
     hiTree_p->GetEntry(entry);
 
     float evWgt(1.0);
-    if(fForestTree.ttbar_w->size()) { evWgt=fForestTree.ttbar_w->at(0); }
+    if(!isMC && fForestTree.ttbar_w->size()) { evWgt=fForestTree.ttbar_w->at(0); }
     wgtSum += evWgt;    
 
     //first of all require a trigger

@@ -242,101 +242,121 @@ def compareElectrons(url,dist):
         p.show(outDir='./',lumi=LUMI,noStack=True)
 
 def doIsolationROCs(url,ch='ee'):
+
     cats=['z'+ch,'ssz'+ch]
+
+    #read all isolation plots and sum the contributions of the two leptons
     data={}
-    for dist in ['l1chreliso','l1chrelisop','l1chisop','l1phoreliso','l1neureliso', 
-                 'l2chreliso','l2chrelisop','l2chisop','l2phoreliso','l2neureliso',
-                 'l1chisovscen','l2chisovscen',
-                 'l1chisovschrho','l2chisovschrho',
-                 'l1chisopvscen','l2chisopvscen']:
-        data[dist]=getDataSummedUp(url,cats,dist,'Skim',False)
+    for c in ['ch','pho','nh']:
+        for d in ['iso','reliso','isovscen','isovsrho']:
+            dist=c+d 
+            for l in ['l1','l2']:
+                plots=getDataSummedUp(url,cats,l+dist,'Skim',False)
+                print plots
+                if l=='l1':
+                    data[dist]=plots
+                else:
+                    for key1 in data:
+                        for key2 in data[key1]:
+                            data[key1][key2].Add( plots[key2] )
 
-    #add the two leptons and subtract to the signal
-    rocs=[]
-
-    isoDists={'chreliso':(1,"I_{ch}^{rel}"),
-              'chrelisop':(4,"I_{ch}^{rel}'"),
-              'chisop':(2,"I_{ch}'"),
-              'phoreliso':(8,"I_{#gamma}^{rel}"),
-              'neureliso':(6,"I_{n.had.}^{rel}")}
-    for iso in ['chreliso','chrelisop','chisop','phoreliso','neureliso']:
-        print iso
-        sig=data['l1%s'%iso]['z'+ch].Clone('sig'+iso)
-        sig.Add(data['l2%s'%iso]['z'+ch])
-        bkg=data['l1%s'%iso]['ssz'+ch].Clone('bkg'+iso)
-        bkg.Add(data['l2%s'%iso]['ssz'+ch])
-        sig.Add(bkg,-1)
-
-        color,title=isoDists[iso]
     
-        rocs.append( ROOT.TGraph() )
-        tot_sig=sig.Integral()
-        tot_bkg=bkg.Integral()
-        nbins=sig.GetNbinsX()
-        best_effsig=0
-        best_xbin=nbins+1
-        for xbin in range(nbins+1):
-            effsig=sig.Integral(0,xbin+1)/tot_sig
-            rocs[-1].SetPoint(xbin,effsig,bkg.Integral(0,xbin+1)/tot_bkg)
-            if abs(effsig-0.9)>abs(best_effsig-0.9) : continue
-            best_effsig=effsig
-            best_xbin=xbin
-        print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
-        rocs[-1].SetTitle(title)
-        rocs[-1].SetLineColor(color)
-        rocs[-1].SetMarkerColor(color)
-        rocs[-1].SetLineWidth(2)
+            #show the plots for simple variables
+            if 'isovs' in d : continue
+            p=Plot('%s'%dist,com='5.02 TeV')
+            p.add(data[dist]['z'+ch],title='Z#rightarrow%s'%ch,color=1,isData=True,spImpose=False,isSyst=False)
+            p.add(data[dist]['ssz'+ch],title='Combinatorial (data)',color=17,isData=False,spImpose=True,isSyst=False)
+            p.show(outDir='./',lumi=LUMI,noStack=True)
 
-    c=ROOT.TCanvas('c','c',500,500)
-    c.SetLeftMargin(0.12)
-    c.SetRightMargin(0.03)
-    c.SetTopMargin(0.05)
-    c.SetBottomMargin(0.11)
-    mg=ROOT.TMultiGraph()
-    for g in rocs: mg.Add(g,'l')
-    mg.Draw('al')
-    mg.GetXaxis().SetRangeUser(0,1)
-    mg.GetYaxis().SetRangeUser(0,1)
-    mg.GetXaxis().SetTitle('Signal efficency')
-    mg.GetYaxis().SetTitle('Background efficency')
-    leg=c.BuildLegend(0.15,0.94,0.4,0.6)
-    leg.SetBorderSize(0)
-    leg.SetTextFont(42)
-    leg.SetTextSize(0.05)
-    leg.SetFillStyle(0)
-    txt=ROOT.TLatex()
-    txt.SetNDC(True)
-    txt.SetTextFont(42)
-    txt.SetTextSize(0.045)
-    txt.SetTextAlign(12)
-    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
-    for ext in ['png','pdf']:
-        c.SaveAs('isorocs_%s.%s'%(ch,ext))
+    return 
 
-    c.SetRightMargin(0.12)
-    for prof in ['chisovscen','chisovschrho','chisopvscen']:
-        sig=data['l1'+prof]['z'+ch].Clone('sig'+iso)
-        sig.Add(data['l2'+prof]['z'+ch])
-        bkg=data['l1'+prof]['ssz'+ch].Clone('bkg'+iso)
-        bkg.Add(data['l2'+prof]['ssz'+ch])
-        sig.Add(bkg,-1)
-        for h,name in [(sig,'sig'),(bkg,'bkg')]:
-            px=h.ProfileX()
-            px.SetMarkerStyle(20)            
-            if not 'isop' in prof:
-                func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
-                px.Fit(func)
-            h.Draw('colz')
-            px.Draw('e1same')
-            txt=ROOT.TLatex()
-            txt.SetNDC(True)
-            txt.SetTextFont(42)
-            txt.SetTextSize(0.045)
-            txt.SetTextAlign(12)
-            txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
-            for ext in ['png','pdf']:
-                c.SaveAs('%s_%s.%s'%(name,prof,ext))
 
+#    #add the two leptons and subtract to the signal
+#    rocs=[]
+#
+#    isoDists={'chreliso':(1,"I_{ch}^{rel}"),
+#              'chrelisop':(4,"I_{ch}^{rel}'"),
+#              'chisop':(2,"I_{ch}'"),
+#              'phoreliso':(8,"I_{#gamma}^{rel}"),
+#              'neureliso':(6,"I_{n.had.}^{rel}")}
+#    for iso in ['chreliso','chrelisop','chisop','phoreliso','neureliso']:
+#        print iso
+#        sig=data['l1%s'%iso]['z'+ch].Clone('sig'+iso)
+#        sig.Add(data['l2%s'%iso]['z'+ch])
+#        bkg=data['l1%s'%iso]['ssz'+ch].Clone('bkg'+iso)
+#        bkg.Add(data['l2%s'%iso]['ssz'+ch])
+#        sig.Add(bkg,-1)
+#
+#        color,title=isoDists[iso]
+#    
+#        rocs.append( ROOT.TGraph() )
+#        tot_sig=sig.Integral()
+#        tot_bkg=bkg.Integral()
+#        nbins=sig.GetNbinsX()
+#        best_effsig=0
+#        best_xbin=nbins+1
+#        for xbin in range(nbins+1):
+#            effsig=sig.Integral(0,xbin+1)/tot_sig
+#            rocs[-1].SetPoint(xbin,effsig,bkg.Integral(0,xbin+1)/tot_bkg)
+#            if abs(effsig-0.9)>abs(best_effsig-0.9) : continue
+#            best_effsig=effsig
+#            best_xbin=xbin
+#        print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
+#        rocs[-1].SetTitle(title)
+#        rocs[-1].SetLineColor(color)
+#        rocs[-1].SetMarkerColor(color)
+#        rocs[-1].SetLineWidth(2)
+#
+#    c=ROOT.TCanvas('c','c',500,500)
+#    c.SetLeftMargin(0.12)
+#    c.SetRightMargin(0.03)
+#    c.SetTopMargin(0.05)
+#    c.SetBottomMargin(0.11)
+#    mg=ROOT.TMultiGraph()
+#    for g in rocs: mg.Add(g,'l')
+#    mg.Draw('al')
+#    mg.GetXaxis().SetRangeUser(0,1)
+#    mg.GetYaxis().SetRangeUser(0,1)
+#    mg.GetXaxis().SetTitle('Signal efficency')
+#    mg.GetYaxis().SetTitle('Background efficency')
+#    leg=c.BuildLegend(0.15,0.94,0.4,0.6)
+#    leg.SetBorderSize(0)
+#    leg.SetTextFont(42)
+#    leg.SetTextSize(0.05)
+#    leg.SetFillStyle(0)
+#    txt=ROOT.TLatex()
+#    txt.SetNDC(True)
+#    txt.SetTextFont(42)
+#    txt.SetTextSize(0.045)
+#    txt.SetTextAlign(12)
+#    txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+#    for ext in ['png','pdf']:
+#        c.SaveAs('isorocs_%s.%s'%(ch,ext))
+#
+#    c.SetRightMargin(0.12)
+#    for prof in ['chisovscen','chisovschrho','chisopvscen']:
+#        sig=data['l1'+prof]['z'+ch].Clone('sig'+iso)
+#        sig.Add(data['l2'+prof]['z'+ch])
+#        bkg=data['l1'+prof]['ssz'+ch].Clone('bkg'+iso)
+#        bkg.Add(data['l2'+prof]['ssz'+ch])
+#        sig.Add(bkg,-1)
+#        for h,name in [(sig,'sig'),(bkg,'bkg')]:
+#            px=h.ProfileX()
+#            px.SetMarkerStyle(20)            
+#            if not 'isop' in prof:
+#                func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
+#                px.Fit(func)
+#            h.Draw('colz')
+#            px.Draw('e1same')
+#            txt=ROOT.TLatex()
+#            txt.SetNDC(True)
+#            txt.SetTextFont(42)
+#            txt.SetTextSize(0.045)
+#            txt.SetTextAlign(12)
+#            txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+#            for ext in ['png','pdf']:
+#                c.SaveAs('%s_%s.%s'%(name,prof,ext))
+#
 
 def doJetHotSpots(url,cats):
 
@@ -391,15 +411,17 @@ def checkAcceptance(url):
 
 url=sys.argv[1]
 
+doIsolationROCs(url,'ee')
+
 #showRateVsRun(url)
 
-dySF=computeDYScaleFactors(url)
+#dySF=computeDYScaleFactors(url)
 
 #compareElectrons(url,'mll')
 #compareElectrons(url,'ptll')
 #compareElectrons(url,'detall')
 
-doIsolationROCs(url,'ee')
+
 
 #doJetHotSpots(url,['zmm','zee','em'])
 
