@@ -8,7 +8,7 @@
 
 class HiTree {
 public :
- HiTree(TChain *t) : weight(1.0)
+ HiTree(TChain *t) : weight(1.0),  ttbar_w(0)
     {
       t->SetBranchAddress("run", &run);
       t->SetBranchAddress("evt", &evt);
@@ -18,6 +18,7 @@ public :
       t->SetBranchAddress("vz", &vz);
       t->SetBranchAddress("hiBin", &hiBin);
       t->SetBranchAddress("weight", &weight);
+      t->SetBranchAddress("ttbar_w", &ttbar_w);
       t->SetBranchAddress("hiHF", &hiHF);
       t->SetBranchAddress("hiHFplus", &hiHFplus);
       t->SetBranchAddress("hiHFminus", &hiHFminus);
@@ -91,6 +92,7 @@ public :
    Int_t           hiNtracksEtaPtCut;
    Int_t           hiNevtPlane;
    Float_t         hiEvtPlanes[1];   //[hiNevtPlane]
+   std::vector<float> *ttbar_w;
 };
 
 #endif

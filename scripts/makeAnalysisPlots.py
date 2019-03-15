@@ -249,16 +249,16 @@ def doIsolationROCs(url,ch='ee'):
                  'l1chisovscen','l2chisovscen',
                  'l1chisovschrho','l2chisovschrho',
                  'l1chisopvscen','l2chisopvscen']:
-        data[dist]=getDataSummedUp(url,cats,dist,'SkimElectrons_Prompt',False)
+        data[dist]=getDataSummedUp(url,cats,dist,'Skim',False)
 
     #add the two leptons and subtract to the signal
     rocs=[]
 
     isoDists={'chreliso':(1,"I_{ch}^{rel}"),
-              'chrelisop':(4,"I_{ch}^{rel'}"),
-              'chisop':(2,"I_{ch}^{'}"),
+              'chrelisop':(4,"I_{ch}^{rel}'"),
+              'chisop':(2,"I_{ch}'"),
               'phoreliso':(8,"I_{#gamma}^{rel}"),
-              'neureliso':(41,"I_{n.had.}^{rel}")}
+              'neureliso':(6,"I_{n.had.}^{rel}")}
     for iso in ['chreliso','chrelisop','chisop','phoreliso','neureliso']:
         print iso
         sig=data['l1%s'%iso]['z'+ch].Clone('sig'+iso)
@@ -284,6 +284,7 @@ def doIsolationROCs(url,ch='ee'):
         print iso,best_effsig,best_xbin,sig.GetXaxis().GetBinCenter(best_xbin+1)
         rocs[-1].SetTitle(title)
         rocs[-1].SetLineColor(color)
+        rocs[-1].SetMarkerColor(color)
         rocs[-1].SetLineWidth(2)
 
     c=ROOT.TCanvas('c','c',500,500)
@@ -296,9 +297,9 @@ def doIsolationROCs(url,ch='ee'):
     mg.Draw('al')
     mg.GetXaxis().SetRangeUser(0,1)
     mg.GetYaxis().SetRangeUser(0,1)
-    mg.GetYaxis().SetTitle('Signal efficency')
+    mg.GetXaxis().SetTitle('Signal efficency')
     mg.GetYaxis().SetTitle('Background efficency')
-    leg=c.BuildLegend(0.15,0.94,0.4,0.7)
+    leg=c.BuildLegend(0.15,0.94,0.4,0.6)
     leg.SetBorderSize(0)
     leg.SetTextFont(42)
     leg.SetTextSize(0.05)
@@ -366,13 +367,34 @@ def doJetHotSpots(url,cats):
         c.SaveAs('jetetavsphi.%s'%ext)
 
 
+def checkAcceptance(url):
 
+    cats=['zee','zeehpur','zeehpurBB']
+    zee=getDataSummedUp(url,cats,'mll','Skim',False)
+    sszee=getDataSummedUp(url,['ss'+x for x in cats],'mll','Skim',False)
+    ttcats=[x[1:] for x in cats]
+    ttbar=getDataSummedUp(url,ttcats,'mll','TT_TuneCP5_5p02TeV-powheg-pythia8',True)
+    nzee_ini=0
+    nsszee_ini=0
+    ntt_ini=0
+    for i in range(len(cats)):
+        nzee=zee[cats[i]].Integral()
+        nsszee=sszee['ss'+cats[i]].Integral()
+        nzee-=nsszee
+        ntt=ttbar[ttcats[i]].Integral()
+        if i==0: 
+            nzee_ini=nzee
+            nsszee_ini=nsszee
+            ntt_ini=ntt
+        print cats[i],nzee/nzee_ini,nsszee/nsszee_ini,ntt/ntt_ini
 
 
 url=sys.argv[1]
 
 #showRateVsRun(url)
+
 dySF=computeDYScaleFactors(url)
+
 #compareElectrons(url,'mll')
 #compareElectrons(url,'ptll')
 #compareElectrons(url,'detall')
@@ -386,10 +408,14 @@ cats+=['zee','zmm','mm','em','ee']
 cats+=['zeehpur','zmmhpur','mmhpur','emhpur','eehpur']
 for cat in cats:
     for d in ['mll','ptll','dphill', 'detall','l1pt','l1eta','l2pt','l2eta']:                
+        continue
         makeControlPlot(url,cat,d,False,True,dySF)
 
 cats=['zee','zmm','mmhpur','emhpur','eehpur']
 for cat in cats:
     for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv']:
+        continue
         makeControlPlot(url,cat,d,True,True,dySF)
               
+
+#checkAcceptance(url)
