@@ -22,7 +22,8 @@ with open('condor_%s.sub'%tag,'w') as c:
     c.write('output      = condor_%s.out\n'%tag)
     c.write('error       = condor_%s.err\n'%tag)
     c.write('log         = condor_%s.log\n'%tag)
-    
+    c.write('requirements = (OpSysAndVer =?= "SLCern6")\n')
+
     chunks=os.listdir(input)
     for i in range(len(chunks)):
         c.write('arguments   = {0} {1}/{2} {3}/{4}_{5}.root {6}\n'.format(cmssw,input,chunks[i],output,tag,i,extraOpts))

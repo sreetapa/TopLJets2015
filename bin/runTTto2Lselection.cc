@@ -22,6 +22,8 @@
 
 const bool isDebug = true;
 
+enum ElectronIDs{LOOSE,TIGHT};
+const int applyEleID=LOOSE;
 const float lepPtCut  = 20.;
 const float lepEtaCut = 2.1;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
@@ -123,13 +125,32 @@ int main(int argc, char* argv[])
       if(j==2) comp="nh";
       ht.addHist(pf+comp+"iso",      new TH1F(pf+comp+"iso",      ";PF "+comp+" isolation;Leptons",50,0,250));
       ht.addHist(pf+comp+"reliso",   new TH1F(pf+comp+"reliso",   ";Relative PF "+comp+" isolation;Leptons",50,0,2.0));
-      ht.addHist(pf+comp+"isovscen", new TH2F(pf+comp+"isovscen", ";Centrality bin;PF "+comp+" isolation [GeV];Leptons",10,0,100,50,0,250));
-      ht.addHist(pf+comp+"isovsrho", new TH2F(pf+comp+"isovsrho", ";#rho_{"+comp+"};PF "+comp+" isolation [GeV];Leptons",10,0,100,20,0,250));
+      ht.addHist(pf+comp+"isovscen", new TH2F(pf+comp+"isovscen", ";Centrality bin;PF "+comp+" isolation [GeV];Leptons",10,0,100,50,0,100));
+      ht.addHist(pf+comp+"isovsrho", new TH2F(pf+comp+"isovsrho", ";#rho_{"+comp+"};PF "+comp+" isolation [GeV];Leptons",10,0,100,20,0,100));
     }    
   }
+
+  //electron specific
+  ht.addHist("esihih",      new TH1F("esihih",      ";#sigma(i#etai#eta);Electrons",       50,0,0.06));
+  ht.addHist("edetavtx",    new TH1F("edetavtx",    ";#Delta#eta(vtx);Electrons",          50,0,0.015));
+  ht.addHist("edphivtx",    new TH1F("edphivtx",    ";#Delta#phi(vtx) [rad];Electrons",    50,0,0.015));
+  ht.addHist("ehoe",        new TH1F("ehoe"    ,    ";h/e;Electrons",                      50,0,0.25));
+  ht.addHist("eempinv",     new TH1F("eempinv",     ";|1/E-1/p| [1/GeV];Electrons",        50,0,0.05));
+  ht.addHist("ed0",         new TH1F("ed0",         ";d_{0} [cm];Electrons",               50,0,0.05));
+  ht.addHist("edz",         new TH1F("edz",         ";d_{z} [cm];Electrons",               50,0,0.05));
+
+  //muon specific
+  ht.addHist("mmusta",     new TH1F("mmusta",      ";Muon stations;Muons",            15,0,15));   
+  ht.addHist("mtrklay",    new TH1F("mtrklay",     ";Tracker layers;Muons",           15,0,15));
+  ht.addHist("mchi2ndf",   new TH1F("mchi2ndf",    ";#chi^2/ndf;Muons",               50,0,15));
+  ht.addHist("mmuhits",    new TH1F("mmuhits",     ";Muon hits;Muons",                15,0,15));
+  ht.addHist("mpxhits",    new TH1F("mpxhits",     ";Pixel hits;Muons",               15,0,15));
+  ht.addHist("md0",        new TH1F("md0",         ";d_{0} [cm];Muons",               50,0,0.5));
+  ht.addHist("mdz",        new TH1F("mdz",         ";d_{z} [cm];Muons",               50,0,1.0));
+ 
   ht.addHist("mll",      new TH1F("mll",      ";Dilepton invariant mass [GeV];Events",40,00,200));
   ht.addHist("ptll",     new TH1F("ptll",     ";Dilepton transverse momentum [GeV];Events",40,0,200));
-  ht.addHist("dphill",   new TH1F("dphill",   ";#Delta#phi(l,l');Events",20,0,3.15));
+  ht.addHist("acopl",    new TH1F("acopl" ,   ";1-#Delta#phi(l,l')/#pi;Events",20,0,3.15));
   ht.addHist("detall",   new TH1F("detall",   ";#Delta#eta(l,l');Events",20,0,4));
   ht.addHist("chrho",    new TH1F("chrho",    ";#rho_{ch};Events",25,0,50));
   ht.addHist("phorho",   new TH1F("phorho",   ";#rho_{#gama};Events",25,0,50));
@@ -210,6 +231,7 @@ int main(int argc, char* argv[])
     float evWgt(1.0);
     if(isMC && fForestTree.ttbar_w->size()) { evWgt=fForestTree.ttbar_w->at(0); }
     wgtSum += evWgt;    
+    float plotWgt(evWgt);
 
     //first of all require a trigger
     int trig=etrig+mtrig;
@@ -307,6 +329,27 @@ int main(int argc, char* argv[])
     }
     std::sort(noIdMu.begin(),noIdMu.end(),orderByPt);
     std::sort(mu.begin(),mu.end(),orderByPt);
+
+
+    //monitor muon id variables
+    if(noIdMu.size()>1) {
+      TLorentzVector p4[2] = {std::get<1>(noIdMu[0]),std::get<1>(noIdMu[1])};
+      int midx[2]          = {std::get<0>(noIdMu[0]),std::get<0>(noIdMu[1])};
+      int charge(fForestMu.muCharge->at(midx[0])*fForestMu.muCharge->at(midx[1]));
+      if( fabs((p4[0]+p4[1]).M()-91)<15 ) {
+        TString cat("zmmctrl");
+        if(charge>0) cat="ss"+cat;
+        for(size_t i=0; i<2; i++) {
+          ht.fill("mmusta",    fForestMu.muStations->at(midx[i]),            plotWgt,cat);
+          ht.fill("mtrklay",   fForestMu.muTrkLayers->at(midx[i]),           plotWgt,cat);
+          ht.fill("mchi2ndf",  fForestMu.muChi2NDF->at(midx[i]),             plotWgt,cat);
+          ht.fill("mmuhits",   fForestMu.muMuonHits->at(midx[i]),            plotWgt,cat);
+          ht.fill("mpxhits",   fForestMu.muPixelHits->at(midx[i]),           plotWgt,cat);
+          ht.fill("md0",       TMath::Abs(fForestMu.muInnerD0->at(midx[i])), plotWgt,cat);
+          ht.fill("mdz",       TMath::Abs(fForestMu.muInnerDz->at(midx[i])), plotWgt,cat);          
+        }
+      }
+    }
        
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
@@ -318,7 +361,7 @@ int main(int argc, char* argv[])
       p4.SetPtEtaPhiM(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),0.000511);
 
       //apply ad-hoc shift for endcap electrons if needed
-      if(!isPP && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>barrelEndcapEta[1])
+      if(!isPP && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1])
         p4 *=eeScaleShift;         
 
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
@@ -328,25 +371,24 @@ int main(int argc, char* argv[])
       noIdEle.push_back(LeptonInfo_t(eleIter,p4));
       
       //electron id (separate for EB and EE)
-      if(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]) {
-        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)>=0.009630) continue;
-        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=0.00661) continue;
-        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=0.019314) continue;
-        if(fForestEle.eleHoverE->at(eleIter)>=0.142968) continue;
-        if(fForestEle.eleEoverPInv->at(eleIter)>=0.010806) continue;
-        if(TMath::Abs(fForestEle.eleD0->at(eleIter))>=0.007551) continue;
-        if(TMath::Abs(fForestEle.eleDz->at(eleIter))>=0.015361) continue;
-        //if(fForestEle.eleMissHits->at(eleIter)>1) continue;
+      bool isEB(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]);
+      if(applyEleID==TIGHT) {
+        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)>=(isEB?0.009630:0.042415)) continue;
+        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB?0.00661:0.007572)) continue;
+        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB?0.019314:0.016572)) continue;
+        if(fForestEle.eleHoverE->at(eleIter)>=(isEB?0.142968:0.145809)) continue;
+        if(fForestEle.eleEoverPInv->at(eleIter)>=(isEB?0.010806:0.008948)) continue;
+        if(TMath::Abs(fForestEle.eleD0->at(eleIter))>=(isEB?0.007551:0.09230)) continue;
+        if(TMath::Abs(fForestEle.eleDz->at(eleIter))>=(isEB?0.015361:0.015449)) continue;
       }
-      else{
-        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)>=0.042415) continue;
-        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=0.007572) continue;
-        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=0.016572) continue;
-        if(fForestEle.eleHoverE->at(eleIter)>=0.145809) continue;
-        if(fForestEle.eleEoverPInv->at(eleIter)>=0.008948) continue;
-        if(TMath::Abs(fForestEle.eleD0->at(eleIter))>=0.09230) continue;
-        if(TMath::Abs(fForestEle.eleDz->at(eleIter))>=0.015449) continue;
-        //if(fForestEle.eleMissHits->at(eleIter)>1) continue;
+      else if(applyEleID==LOOSE) {
+        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)>=(isEB?0.011122:0.045489)) continue;
+        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB?0.007627:0.014374)) continue;
+        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB?0.028118:0.030909)) continue;
+        if(fForestEle.eleHoverE->at(eleIter)>=(isEB?0.149803:0.147656)) continue;
+        if(fForestEle.eleEoverPInv->at(eleIter)>=(isEB?0.027230:0.030291)) continue;
+        if(TMath::Abs(fForestEle.eleD0->at(eleIter))>=(isEB?0.023967:0.018704)) continue;
+        if(TMath::Abs(fForestEle.eleDz->at(eleIter))>=(isEB?0.031008:0.041391)) continue;
       }
 
       //selected electron
@@ -355,6 +397,30 @@ int main(int argc, char* argv[])
     std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);
     std::sort(ele.begin(),ele.end(),orderByPt);
        
+
+    //monitor electron id variables
+    if(noIdEle.size()>1) {
+      TLorentzVector p4[2] = {std::get<1>(noIdEle[0]),std::get<1>(noIdEle[1])};
+      int eidx[2]          = {std::get<0>(noIdEle[0]),std::get<0>(noIdEle[1])};
+      int charge(fForestEle.eleCharge->at(eidx[0])*fForestEle.eleCharge->at(eidx[1]));
+      if( fabs((p4[0]+p4[1]).M()-91)<15 ) {
+        TString basecat("zeectrl");
+        if(charge>0) basecat="ss"+basecat;
+        for(size_t i=0; i<2; i++) {
+          TString cat(basecat);
+          cat += (fabs(p4[i].Eta())>=barrelEndcapEta[1] ? "EE" : "EB");
+          ht.fill("esihih",  fForestEle.eleSigmaIEtaIEta->at(eidx[i]),         plotWgt,cat);
+          ht.fill("edetavtx", TMath::Abs(fForestEle.eledEtaAtVtx->at(eidx[i])), plotWgt,cat);
+          ht.fill("edphivtx", TMath::Abs(fForestEle.eledPhiAtVtx->at(eidx[i])), plotWgt,cat);
+          ht.fill("ehoe",     fForestEle.eleHoverE->at(eidx[i]),                plotWgt,cat);
+          ht.fill("eempinv",  fForestEle.eleEoverPInv->at(eidx[i]),             plotWgt,cat);
+          ht.fill("ed0",      TMath::Abs(fForestEle.eleD0->at(eidx[i])),        plotWgt,cat);
+          ht.fill("edz",      TMath::Abs(fForestEle.eleDz->at(eidx[i])),        plotWgt,cat);          
+        }
+      }
+    }
+
+
     //check if all electrons are barrel
     bool allEleInEB(true);
     for(size_t i=0; i<min(ele.size(),size_t(2)); i++){
@@ -590,8 +656,6 @@ int main(int argc, char* argv[])
       categs=addCategs;
     }
 
-
-    float plotWgt(evWgt);
     for(int i=0; i<2; i++) {
       TString pf(Form("l%d",i+1));
       float pt(selLeptons[i].Pt());
@@ -601,20 +665,23 @@ int main(int argc, char* argv[])
       float phoiso(std::get<1>(liso[i]));
       float nhiso(std::get<2>(liso[i]));
 
+      ht.fill(pf+"chiso",          chiso,     plotWgt, categs);
       ht.fill(pf+"chreliso",       chiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"chisovscen",   cenBin, chiso,   plotWgt, categs);
-      ht.fill2D(pf+"chisovsrho",   chrho,  chiso,   plotWgt, categs);
+      ht.fill2D(pf+"chisovscen",   cenBin,    chiso,   plotWgt, categs);
+      ht.fill2D(pf+"chisovsrho",   chrho,     chiso,   plotWgt, categs);
 
-      ht.fill(pf+"phoreliso",     phoiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"phoisovscen", cenBin, phoiso, plotWgt, categs);
-      ht.fill2D(pf+"phoisovsrho", phorho, phoiso,   plotWgt, categs);
+      ht.fill(pf+"phoiso",        phoiso,     plotWgt,  categs);
+      ht.fill(pf+"phoreliso",     phoiso/pt,  plotWgt,  categs);
+      ht.fill2D(pf+"phoisovscen", cenBin,     phoiso,   plotWgt, categs);
+      ht.fill2D(pf+"phoisovsrho", phorho,     phoiso,   plotWgt, categs);
 
+      ht.fill(pf+"nhiso",        nhiso,     plotWgt, categs);
       ht.fill(pf+"nhreliso",     nhiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"nhisovscen", cenBin, nhiso, plotWgt, categs);
-      ht.fill2D(pf+"nhisovsrho", nhrho,  nhiso, plotWgt, categs);
+      ht.fill2D(pf+"nhisovscen", cenBin,    nhiso,   plotWgt, categs);
+      ht.fill2D(pf+"nhisovsrho", nhrho,     nhiso,   plotWgt, categs);
     }
 
-    ht.fill( "dphill",    fabs(selLeptons[0].DeltaPhi(selLeptons[1])), plotWgt, categs);
+    ht.fill( "acopl",     1-fabs(selLeptons[0].DeltaPhi(selLeptons[1]))/TMath::Pi(), plotWgt, categs);
     ht.fill( "detall",    fabs(selLeptons[0].Eta()-selLeptons[1].Eta()), plotWgt, categs);
     ht.fill( "mll",       ll.M(),                                      plotWgt, categs);
     ht.fill( "ptll",      ll.Pt(),                                     plotWgt, categs);

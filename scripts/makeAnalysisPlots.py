@@ -250,7 +250,7 @@ def doIsolationROCs(url,ch='ee'):
     #read all isolation plots and sum the contributions of the two leptons
     data={}
     for c in ['ch','pho','nh']:
-        for d in ['iso','reliso','isovscen','isovsrho']:
+        for d in ['reliso','isovscen','isovsrho']:
             dist=c+d 
             for l in ['l1','l2']:
                 plots=getDataSummedUp(url,cats,l+dist,'Skim',False)
@@ -258,19 +258,50 @@ def doIsolationROCs(url,ch='ee'):
                 if l=='l1':
                     data[dist]=plots
                 else:
-                    for key1 in data:
-                        for key2 in data[key1]:
-                            data[key1][key2].Add( plots[key2] )
+                    for key in data[dist]:                           
+                        data[dist][key].Add( plots[key] )
 
-    
             #show the plots for simple variables
             if 'isovs' in d : continue
             p=Plot('%s'%dist,com='5.02 TeV')
             p.add(data[dist]['z'+ch],title='Z#rightarrow%s'%ch,color=1,isData=True,spImpose=False,isSyst=False)
-            p.add(data[dist]['ssz'+ch],title='Combinatorial (data)',color=17,isData=False,spImpose=True,isSyst=False)
+            data[dist]['ssz'+ch].SetFillStyle(3001)
+            data[dist]['ssz'+ch].SetFillColor(17)
+            p.add(data[dist]['ssz'+ch],title='Combinatorial (data)',color=17,isData=False,spImpose=False,isSyst=False)
+            p.savelog=True
             p.show(outDir='./',lumi=LUMI,noStack=True)
 
-    return 
+    cnv=ROOT.TCanvas('c','c',500,500)
+    cnv.SetLeftMargin(0.12)
+    cnv.SetTopMargin(0.05)
+    cnv.SetBottomMargin(0.11)
+    cnv.SetRightMargin(0.12)
+    for c in ['ch','pho','nh']:
+        for d in ['isovscen','isovsrho']:
+            iso=c+d
+
+            #subtract combinatorial background
+            sig=data[iso]['z'+ch].Clone('sig'+iso)
+            bkg=data[iso]['ssz'+ch].Clone('bkg'+iso)
+            sig.Add(bkg,-1)
+            px=sig.ProfileX()
+            px.SetMarkerStyle(20)            
+            if not 'isop' in iso:
+                func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
+                px.Fit(func)
+            sig.Draw('colz')
+            px.Draw('e1same')
+            txt=ROOT.TLatex()
+            txt.SetNDC(True)
+            txt.SetTextFont(42)
+            txt.SetTextSize(0.045)
+            txt.SetTextAlign(12)
+            txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
+            cnv.Modified()
+            cnv.Update()
+            for ext in ['png','pdf']:
+                cnv.SaveAs('%s.%s'%(iso,ext))
+
 
 
 #    #add the two leptons and subtract to the signal
@@ -335,29 +366,6 @@ def doIsolationROCs(url,ch='ee'):
 #    for ext in ['png','pdf']:
 #        c.SaveAs('isorocs_%s.%s'%(ch,ext))
 #
-#    c.SetRightMargin(0.12)
-#    for prof in ['chisovscen','chisovschrho','chisopvscen']:
-#        sig=data['l1'+prof]['z'+ch].Clone('sig'+iso)
-#        sig.Add(data['l2'+prof]['z'+ch])
-#        bkg=data['l1'+prof]['ssz'+ch].Clone('bkg'+iso)
-#        bkg.Add(data['l2'+prof]['ssz'+ch])
-#        sig.Add(bkg,-1)
-#        for h,name in [(sig,'sig'),(bkg,'bkg')]:
-#            px=h.ProfileX()
-#            px.SetMarkerStyle(20)            
-#            if not 'isop' in prof:
-#                func=ROOT.TF1('func','[0]/([1]+x)+[2]',0,2)
-#                px.Fit(func)
-#            h.Draw('colz')
-#            px.Draw('e1same')
-#            txt=ROOT.TLatex()
-#            txt.SetNDC(True)
-#            txt.SetTextFont(42)
-#            txt.SetTextSize(0.045)
-#            txt.SetTextAlign(12)
-#            txt.DrawLatex(0.12,0.97,'#bf{CMS} #it{preliminary}')
-#            for ext in ['png','pdf']:
-#                c.SaveAs('%s_%s.%s'%(name,prof,ext))
 #
 
 def doJetHotSpots(url,cats):
