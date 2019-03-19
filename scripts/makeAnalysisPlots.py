@@ -20,7 +20,7 @@ SAMPLES=[
     ('WWTo2L2Nu_NNPDF31_TuneCP5_5p02TeV-powheg-pythia8',         'VV',                   1.21*(ABEAM**2)*LUMI,         "#386cb0"),         
     ('WZTo3LNU_NNPDF30_TuneCP5_5p20TeV-powheg',                  'VV',                   1.77*(ABEAM**2)*LUMI,         "#386cb0"),         
     ('ZZTo4L_5p02TeV_powheg_pythia8',                            'VV',                   0.441*(ABEAM**2)*LUMI,        "#386cb0"),         
-    ('Skim',                                                     'Combinatorial (data)', None,                         17),
+    ('Skim',                                                     'Comb. (data)',         None,                         17),
     ('Skim',                                                     'Data',                 None,                         1),
 ]
 
@@ -96,7 +96,7 @@ def showRateVsRun(url,catList=['e','m']):
     p.show(outDir='./',lumi=LUMI)
 
 
-def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
+def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF,plotter=None,rebin=None,saveTeX=False):
 
     """makes a standard control plot using the ROOT files in 'url' 
     'cat' and 'pname' are used to build the full plot name
@@ -111,7 +111,7 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
         if 'mm' in icat : ilumi=CHLUMI['mm']
         if 'ee' in icat : ilumi=CHLUMI['ee']
         if not 'z' in icat: ilumi=CHLUMI['blind']
-        if title=='Combinatorial (data)': icat='ss'+cat
+        if title=='Comb. (data)': icat='ss'+cat
         normByWgtSum=True if scale else False
 
         plots=getDataSummedUp(url,[icat],pname,tag,normByWgtSum)
@@ -137,7 +137,7 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
             h.Scale(scale)
             
             #change shape
-            if len(zShapeCat)>0:
+            if dyFromData>1 and len(zShapeCat)>0:
                 zplot=getDataSummedUp(url,[zShapeCat],pname,'Skim',False)[zShapeCat]
                 sszplot=getDataSummedUp(url,['ss'+zShapeCat],pname,'Skim',False)['ss'+zShapeCat]
                 zplot.Add(sszplot,-1)
@@ -151,7 +151,7 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
 
         plots=getDataSummedUp(url,[icat],pname,tag,normByWgtSum)
 
-        if title=='Combinatorial (data)' and not 'z' in icat:
+        if title=='Comb. (data)' and not 'z' in icat:
             h.Scale(CHLUMI['blind']/LUMI)
 
         if not title in plotsPerProc:
@@ -165,12 +165,15 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
     p=Plot('%s_%s'%(cat,pname) ,com='5.02 TeV')
 
     for proc in ['Z/#gamma^{*}', 
-                 'Combinatorial (data)' if combFromData else 'W',                 
+                 'Comb. (data)' if combFromData else 'W',                 
                  't#bar{t}',
                  'tW', 
                  'VV', 
                  'Data']:
         if not proc in plotsPerProc : continue        
+        
+        if rebin: plotsPerProc[proc].Rebin(rebin)
+        
         p.add(h=plotsPerProc[proc],
               title=proc,
               color=plotsPerProc[proc].GetLineColor(),
@@ -178,7 +181,8 @@ def makeControlPlot(url,cat,pname,dyFromData,combFromData,dySF):
               spImpose=False,
               isSyst=False)
     p.savelog=True
-    p.show(outDir='./',lumi=ilumi)
+    p.show(outDir='./',lumi=ilumi,saveTeX=saveTeX if saveTeX else False)
+    if plotter : p.appendTo(plotter)
     p.reset()
 
 def computeDYScaleFactors(url):
@@ -243,6 +247,34 @@ def compareElectrons(url,dist):
             p.add(data[triplet[3]],title=title[3],color=6,isData=False,spImpose=False,isSyst=False)
         p.show(outDir='./',lumi=LUMI,noStack=True)
 
+def doEleIDPlots(url):
+
+    for reg in ['EB','EE']:
+        cats=['zeectrl'+reg,'sszeectrl'+reg]
+        for dist in ['esihih','edetavtx','edphivtx','ehoe','eempinv','ed0', 'edz']:
+            plots=getDataSummedUp(url,cats,dist,'Skim',False)
+            
+            #show the plots for simple variables
+            p=Plot('%s%s'%(dist,reg),com='5.02 TeV')
+            p.add(plots[cats[0]],title='Z#rightarrowee (data)',color=1,isData=True,spImpose=False,isSyst=False)
+            p.add(plots[cats[1]],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
+            p.savelog=True
+            p.show(outDir='./',lumi=LUMI)
+
+def doMuIDPlots(url):
+
+    cats=['zmmctrl','sszmmctrl']
+    for dist in ['mmusta', 'mtrklay', 'mchi2ndf', 'mmuhits', 'mpxhits', 'md0','mdz']:
+        plots=getDataSummedUp(url,cats,dist,'Skim',False)
+            
+        #show the plots for simple variables
+        p=Plot('%s'%dist,com='5.02 TeV')
+        p.add(plots[cats[0]],title='Z#rightarrow#mu#mu (data)',color=1,isData=True,spImpose=False,isSyst=False)
+        p.add(plots[cats[1]],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
+        p.savelog=True
+        p.show(outDir='./',lumi=LUMI)
+        
+
 def doIsolationROCs(url,ch='ee'):
 
     cats=['z'+ch,'ssz'+ch]
@@ -267,10 +299,11 @@ def doIsolationROCs(url,ch='ee'):
             p.add(data[dist]['z'+ch],title='Z#rightarrow%s'%ch,color=1,isData=True,spImpose=False,isSyst=False)
             data[dist]['ssz'+ch].SetFillStyle(3001)
             data[dist]['ssz'+ch].SetFillColor(17)
-            p.add(data[dist]['ssz'+ch],title='Combinatorial (data)',color=17,isData=False,spImpose=False,isSyst=False)
+            p.add(data[dist]['ssz'+ch],title='Comb. (data)',color=17,isData=False,spImpose=False,isSyst=False)
             p.savelog=True
-            p.show(outDir='./',lumi=LUMI,noStack=True)
+            p.show(outDir='./',lumi=LUMI)
 
+    return
     cnv=ROOT.TCanvas('c','c',500,500)
     cnv.SetLeftMargin(0.12)
     cnv.SetTopMargin(0.05)
@@ -420,12 +453,14 @@ def checkAcceptance(url):
 
 
 url=sys.argv[1]
-
+#doEleIDPlots(url)
 doIsolationROCs(url,'ee')
+#doMuIDPlots(url)
+#doIsolationROCs(url,'mm')
 
 #showRateVsRun(url)
 
-#dySF=computeDYScaleFactors(url)
+dySF=computeDYScaleFactors(url)
 
 #compareElectrons(url,'mll')
 #compareElectrons(url,'ptll')
@@ -436,18 +471,34 @@ doIsolationROCs(url,'ee')
 #doJetHotSpots(url,['zmm','zee','em'])
 
 cats=[]
-cats+=['zee','zmm','mm','em','ee']
-cats+=['zeehpur','zmmhpur','mmhpur','emhpur','eehpur']
+#cats+=['zee','zmm','mm','em','ee']
+#cats+=['zeehpur','zmmhpur']
+cats+=['mm','em','ee']
+cats+=['mmhpur','emhpur','eehpur']
+cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
+cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
 for cat in cats:
-    for d in ['mll','ptll','dphill', 'detall','l1pt','l1eta','l2pt','l2eta']:                
+    for d in ['mll','ptll','l1pt','l1eta','l2pt','l2eta']:                        
         continue
-        makeControlPlot(url,cat,d,False,True,dySF)
+        makeControlPlot(url,cat,d,1,True,dySF)
 
-cats=['zee','zmm','mmhpur','emhpur','eehpur']
+fIn=ROOT.TFile.Open('plotter.root','RECREATE')
+fIn.Close()
 for cat in cats:
-    for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv']:
+    for d in ['acopl', 'detall','drll']:
         continue
-        makeControlPlot(url,cat,d,True,True,dySF)
+        makeControlPlot(url,cat,d,1,True,dySF,'plotter.root',rebin=2) #,saveTeX=True)
+
+
+for cat in cats:
+    for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv','pfrapavg','pfraprms','pfrapmaxspan']:
+        continue
+        makeControlPlot(url,cat,d,2,True,dySF)
+
+for cat in cats:
+    for d in ['pfht','pfmht']:        
+        continue
+        makeControlPlot(url,cat,d,2,True,dySF,rebin=2)
               
 
 #checkAcceptance(url)

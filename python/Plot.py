@@ -156,6 +156,9 @@ class Plot(object):
             outDir = outF.mkdir(self.name)
             outDir.cd()
         for m in self.mc :
+            name=self.mc[m].GetName()
+            for tkn in [' ','#','{','}','[',']','(',')','.',',','^','*','/']: name=name.replace(tkn,'')
+            self.mc[m].SetName(name)
             self.mc[m].Write(self.mc[m].GetName(), ROOT.TObject.kOverwrite)
         if self.totalMCUnc:
             self.totalMCUnc.Write(self.totalMCUnc.GetName(), ROOT.TObject.kOverwrite)
