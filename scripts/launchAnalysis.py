@@ -23,6 +23,7 @@ with open('condor_%s.sub'%tag,'w') as c:
     c.write('error       = condor_%s.err\n'%tag)
     c.write('log         = condor_%s.log\n'%tag)
     c.write('requirements = (OpSysAndVer =?= "SLCern6")\n')
+    c.write('+MaxRuntime = 7200\n')
 
     chunks=os.listdir(input)
     for i in range(len(chunks)):
