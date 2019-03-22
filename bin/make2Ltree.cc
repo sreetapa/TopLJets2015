@@ -311,17 +311,17 @@ int main(int argc, char* argv[])
   Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2;
 
   // these must have the same name as in the training. and the same ordeeeeeeer
-  reader->AddVariable("lep_pt[0]"                                   , &bdt_l1pt);
-  reader->AddVariable("(lep_pt[0]-lep_pt[1])/(lep_pt[0]+lep_pt[1])" , &bdt_apt);
-  reader->AddVariable("llpt"                                        , &t_llpt);
-  reader->AddVariable("abs(lleta)"                                  , &bdt_abslleta);
-  reader->AddVariable("dphi"                                        , &t_dphi);
-  reader->AddVariable("abs(dphi_2(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1],2))", &bdt_dphilll2);
-  reader->AddSpectator("llm"                                         , &t_llm);
+  reader->AddVariable("lep_pt[0]"  , &bdt_l1pt    );
+  reader->AddVariable("apt"        , &bdt_apt     );
+  reader->AddVariable("llpt"       , &t_llpt      );
+  reader->AddVariable("abs(lleta)" , &bdt_abslleta);
+  reader->AddVariable("dphi"       , &t_dphi      );
+  reader->AddVariable("dphilll2"   , &bdt_dphilll2);
+  // not there anymore reader->AddSpectator("llm"       , &t_llm       );
 
-  TString methodName("BDT method");
+  TString methodName("BDTG method");
   // hard coded path for now ...
-  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_sixBest/weights/TMVAClassification_BDT.weights.xml");
+  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_sixBestNew/weights/TMVAClassification_BDTG.weights.xml");
   reader->BookMVA( methodName, weightFile);
 
     
@@ -393,8 +393,8 @@ int main(int argc, char* argv[])
     JetMedianBackgroundEstimator nhbge(sel_rapmax, jet_def_for_rho, area_def);
     nhbge.set_particles(nhCands);
     float chrho=chbge.rho();
-    float nhrho=phobge.rho();
-    float phorho=nhbge.rho();
+    float nhrho=nhbge.rho();
+    float phorho=phobge.rho();
 
 
     //monitor trigger and centrality
@@ -966,13 +966,13 @@ int main(int argc, char* argv[])
     bdt_l1pt = t_lep_pt[0];
     bdt_apt =  (t_lep_pt[0]-t_lep_pt[1])/(t_lep_pt[0]+t_lep_pt[1]);
     bdt_abslleta = fabs(t_lleta);
-    bdt_dphilll2 = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2));
+    bdt_dphilll2 = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
 
 
     t_apt = bdt_apt;
     t_dphilll2 = bdt_dphilll2;
-    t_bdt = reader->EvaluateMVA( "BDT method" );
-    t_bdt_rarity = reader->GetRarity( "BDT method" );
+    t_bdt = reader->EvaluateMVA( "BDTG method" );
+    t_bdt_rarity = reader->GetRarity( "BDTG method" );
 
     outTree->Fill();
 

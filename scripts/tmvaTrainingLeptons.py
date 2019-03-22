@@ -26,14 +26,14 @@ factory = r.TMVA.Factory('TMVAClassification', output_f,
                          'Transformations=I;D;P;G,D',
                          'AnalysisType=Classification'])  )
 
-dataloader = r.TMVA.DataLoader('trainingV2_sixBest')
+dataloader = r.TMVA.DataLoader('trainingV2_sixBestNew')
 
-dataloader.AddVariable('lep_pt[0]'                                   , 'p_{T}^{lep1}'   , 'GeV' , 'F')
-dataloader.AddVariable('(lep_pt[0]-lep_pt[1])/(lep_pt[0]+lep_pt[1])' , 'A_{pt}'         , ''    , 'F')
-dataloader.AddVariable('llpt'                                        , 'p_{T}^{ll}'     , 'GeV' , 'F')
-dataloader.AddVariable('abs(lleta)'                                       , '|#eta^{ll}|'      , ''    , 'F')
-dataloader.AddVariable('dphi'                                        , '|#Delta #phi|'    , 'rad'    , 'F')
-dataloader.AddVariable('abs(dphi_2(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1],2))', '|#Delta #phi_{ll,l2}|'    , 'rad'    , 'F')
+dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'          , 'GeV' , 'F')
+dataloader.AddVariable('apt'        , 'A_{pt}'                , ''    , 'F')
+dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'            , 'GeV' , 'F')
+dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'           , ''    , 'F')
+dataloader.AddVariable('dphi'       , '|#Delta #phi|'         , 'rad' , 'F')
+dataloader.AddVariable('dphilll2'   , '|#Delta #phi_{ll,l2}|' , 'rad' , 'F')
 
 ##  dataloader.AddSpectator('llm'                                         , 'spec m_{ll}'         , 'GeV' )#, 'F')
 
