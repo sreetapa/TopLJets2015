@@ -23,3 +23,10 @@ float dphi_2(float pt1, float eta1, float phi1, float pt2, float eta2, float phi
     return dphi;
 }
 
+float rapidity(float pt1, float eta1, float phi1, float pt2, float eta2, float phi2) {
+    TLorentzVector p41, p42;
+    p41.SetPtEtaPhiM(pt1,eta1,phi1,0.);
+    p42.SetPtEtaPhiM(pt2,eta2,phi2,0.);
+    float rapidity = (p41+p42).Rapidity();
+    return rapidity;
+}

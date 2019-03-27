@@ -17,32 +17,29 @@ r.TMVA.Tools.Instance()
 output_fn  = 'training.root'
 output_f   = r.TFile(output_fn,'RECREATE')
  
-factory = r.TMVA.Factory('TMVAClassification', output_f,
-                         ':'.join([
-                         '!V',
-                         '!Silent',
-                         'Color',
-                         'DrawProgressBar',
-                         'Transformations=I;D;P;G,D',
-                         'AnalysisType=Classification'])  )
+factory = r.TMVA.Factory('TMVAClassification', output_f, '!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification')
 
-dataloader = r.TMVA.DataLoader('trainingV2_sixBestCV')
+dataloader = r.TMVA.DataLoader('trainingV2_sevenVars_includeEMuZ/')
 
-dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'          , 'GeV' , 'F')
-dataloader.AddVariable('apt'        , 'A_{pt}'                , ''    , 'F')
-dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'            , 'GeV' , 'F')
-dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'           , ''    , 'F')
-dataloader.AddVariable('dphi'       , '|#Delta #phi|'         , 'rad' , 'F')
-dataloader.AddVariable('dphilll2'   , '|#Delta #phi_{ll,l2}|' , 'rad' , 'F')
+dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'     , 'GeV' , 'F')
+dataloader.AddVariable('apt'        , 'A_{pt}'           , ''    , 'F')
+dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
+dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
+dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
+dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'I')
 
-##  dataloader.AddSpectator('llm'                                         , 'spec m_{ll}'         , 'GeV' )#, 'F')
-
-#dataloader.AddVariable('abs(dphi_2(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1],1))', '|#Delta #phi_{ll,l1}|'    , 'rad'    , 'F')
-#dataloader.AddVariable('abs(sumeta)'                          , '|#sum #eta_{i}|', ''    , 'F')
-#dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])'                          , '#sum |#eta_{i}|', ''    , 'F')
-#dataloader.AddVariable('max(abs(lep_eta[0]),abs(lep_eta[1]))'                          , 'max(|#eta_{i}|)', ''    , 'F')
-#dataloader.AddVariable('deta'                                        , '#Delta #eta'    , ''    , 'F')
-#dataloader.AddVariable('lep_pt[1]'                                   , 'p_{T}^{lep2}'   , 'GeV' , 'F')
+#forget about the folllowing
+#================================================================================================================
+#dataloader.AddVariable('dphilll2' , '|#Delta #phi_{ll,l2}|' , 'rad' , 'F')
+#dataloader.AddVariable('abs(rapidity(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1]))', '|y_{ll}|', ''  , 'F')
+##  dataloader.AddSpectator('llm'     , 'spec m_{ll}' , 'GeV' )#, 'F')
+#dataloader.AddVariable('abs(dphi_2(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1],1))', '|#Delta #phi_{ll,l1}|'  , 'rad'  , 'F')
+#dataloader.AddVariable('abs(sumeta)'    , '|#sum #eta_{i}|', ''  , 'F')
+#dataloader.AddVariable('max(abs(lep_eta[0]),abs(lep_eta[1]))'    , 'max(|#eta_{i}|)', ''  , 'F')
+#dataloader.AddVariable('deta'      , '#Delta #eta'  , ''  , 'F')
+#dataloader.AddVariable('lep_pt[1]'     , 'p_{T}^{lep2}' , 'GeV' , 'F')
+#================================================================================================================
  
 ## add weights for signal and background
 dataloader.SetBackgroundWeightExpression('weight/abs(weight)')
@@ -60,8 +57,10 @@ dataloader.AddSignalTree    (sig_tree)
 dataloader.AddBackgroundTree(bkg_tree)
 
 # cuts defining the signal and background sample
-sig_cutstring = 'llm > 106. || llm < 76.'
-bkg_cutstring = 'llm > 106. || llm < 76.'
+
+cutstring = 'abs(lep_pdgId[0]*lep_pdgId[1]) == 143 || llm > 106. || llm < 76.'
+sig_cutstring = cutstring
+bkg_cutstring = cutstring
 sigCut = r.TCut(sig_cutstring)
 bgCut  = r.TCut(bkg_cutstring)
 
@@ -94,13 +93,21 @@ h_dphiROC.Draw('l')
 
  
 dataloader.PrepareTrainingAndTestTree(sigCut,   # signal events
-                                   bgCut,    # background events
-                                   ':'.join([
-                                   'nTrain_Signal=0',
-                                   'nTrain_Background=0',
-                                   'SplitMode=Random',
-                                   'NormMode=NumEvents',
-                                   '!V' ]))
+                                      bgCut,    # background events
+                                      'nTrain_Signal=0:nTrain_Background=0:SplitMode=Random:NormMode=NumEvents:!V')
+
+## run some cross validation for BDT and BDTG
+## Setup cross-validation with method
+## something doesn't work cv = r.TMVA.CrossValidation(dataloader)
+## something doesn't work cv_bdt = cv.BookMethod(r.TMVA.Types.kBDT, 'BDT', '!H:!V' )
+## something doesn't work 
+## something doesn't work ## do the cross validation first
+## something doesn't work print 'doing cross validation'
+## something doesn't work cv.Evaluate()
+## something doesn't work cv_result = cv.GetResults()
+## something doesn't work cv_result[0].Print()
+## something doesn't work print 'done with cross validation'
+ 
 
 ## define your methods: BDT, FISHER, LIKELIHOOD. along with the options
 
@@ -113,50 +120,17 @@ bdtg = factory.BookMethod(dataloader, r.TMVA.Types.kBDT, 'BDTG',
 
 # Fisher discriminant (same as LD)
 fisher = factory.BookMethod(dataloader, r.TMVA.Types.kFisher, 'Fisher', 
-                            ':'.join(['H',
-                                      '!V',
-                                      'Fisher',
-                                      'CreateMVAPdfs',
-                                      'PDFInterpolMVAPdf=Spline2',
-                                      'NbinsMVAPdf=50',
-                                      'NsmoothMVAPdf=10']) )
+      'H:!V:Fisher:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=50:NsmoothMVAPdf=10')
 
 ## likelihood
 lh = factory.BookMethod( dataloader, r.TMVA.Types.kLikelihood, 'LikelihoodD', 
-                        ':'.join([ '!H', 
-                                   '!V', 
-                                   'CreateMVAPdfs',
-                                   '!TRansformOutput', 
-                                   'PDFInterpol=Spline2', 
-                                   'NSmoothSig[0]=20', 
-                                   'NSmooth=5', 
-                                   'NAvEvtPerBin=50', 
-                                   'VarTransform=Decorrelate' ]))
+      '!H:!V:CreateMVAPdfs:!TRansformOutput:PDFInterpol=Spline2:NSmoothSig[0]=20:NSmooth=5:NAvEvtPerBin=50:VarTransform=Decorrelate')
 
 ## ## cuts
 ## cuts = factory.BookMethod( dataloader, r.TMVA.Types.kCuts, 'CutsD',
-##                            ':'.join(['!H', 
-##                                      '!V', 
-##                                      'FitMethod=MC', 
-##                                      'EffSel', 
-##                                      'SampleSize=200000',
-##                                      'VarProp=FSmart',
-##                                      'VarTransform=Decorrelate']) );
+##       '!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate')
 
-## run some cross validation for BDT and BDTG
-## Setup cross-validation with method
-cv = r.TMVA.CrossValidation(dataloader)
-cv_bdt = cv.BookMethod(r.TMVA.Types.kBDT, 'BDT', '!H:!V' )
-
-
-
-
-## do the cross validation first
-cv.Evaluate()
-cv_result = cv.GetResults()
-cv_result.Print()
- 
-doTraining = False
+doTraining = True
 if doTraining:
     ## do the training
     factory.TrainAllMethods()
