@@ -26,7 +26,7 @@ factory = r.TMVA.Factory('TMVAClassification', output_f,
                          'Transformations=I;D;P;G,D',
                          'AnalysisType=Classification'])  )
 
-dataloader = r.TMVA.DataLoader('trainingV2_sixBestNew')
+dataloader = r.TMVA.DataLoader('trainingV2_sixBestCV')
 
 dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'          , 'GeV' , 'F')
 dataloader.AddVariable('apt'        , 'A_{pt}'                , ''    , 'F')
@@ -106,19 +106,10 @@ dataloader.PrepareTrainingAndTestTree(sigCut,   # signal events
 
 ### some sort of bdt
 bdt = factory.BookMethod(dataloader, r.TMVA.Types.kBDT, 'BDT', 
-                         ':'.join([ '!H', 
-                                    '!V', 
-                                    'NTrees=850', 
-                                    'CreateMVAPdfs',
-                                    'MinNodeSize=0.05', 
-                                    'MaxDepth=3', 
-                                    'BoostType=AdaBoost', 
-                                    'AdaBoostBeta=0.5', 
-                                    'SeparationType=GiniIndex', 
-                                    'nCuts=20', 
-                                    'PruneMethod=NoPruning', ]))
+      '!H:!V:NTrees=850:CreateMVAPdfs:MinNodeSize=0.05:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:SeparationType=GiniIndex:nCuts=20:PruneMethod=NoPruning' )
 
-bdtg = factory.BookMethod(dataloader, r.TMVA.Types.kBDT, 'BDTG', "!H:!V:NTrees=1000:CreateMVAPdfs:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2" );
+bdtg = factory.BookMethod(dataloader, r.TMVA.Types.kBDT, 'BDTG', 
+      '!H:!V:NTrees=1000:CreateMVAPdfs:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=20:MaxDepth=2' )
 
 # Fisher discriminant (same as LD)
 fisher = factory.BookMethod(dataloader, r.TMVA.Types.kFisher, 'Fisher', 
@@ -151,11 +142,28 @@ lh = factory.BookMethod( dataloader, r.TMVA.Types.kLikelihood, 'LikelihoodD',
 ##                                      'SampleSize=200000',
 ##                                      'VarProp=FSmart',
 ##                                      'VarTransform=Decorrelate']) );
+
+## run some cross validation for BDT and BDTG
+## Setup cross-validation with method
+cv = r.TMVA.CrossValidation(dataloader)
+cv_bdt = cv.BookMethod(r.TMVA.Types.kBDT, 'BDT', '!H:!V' )
+
+
+
+
+## do the cross validation first
+cv.Evaluate()
+cv_result = cv.GetResults()
+cv_result.Print()
  
-## do the training
-factory.TrainAllMethods()
-factory.TestAllMethods()
-factory.EvaluateAllMethods()
+doTraining = False
+if doTraining:
+    ## do the training
+    factory.TrainAllMethods()
+    factory.TestAllMethods()
+    factory.EvaluateAllMethods()
+
+
 
 output_f.Close()
 
