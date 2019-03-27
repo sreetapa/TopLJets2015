@@ -710,7 +710,6 @@ int main(int argc, char* argv[])
       addCategs.clear();
       for(auto c: categs) {
         addCategs.push_back(c);
-        //if(allTkBInEB) addCategs.push_back(c+"alltkeb");
         if(allPFBInEB) addCategs.push_back(c+"allpfeb");
       }
       categs=addCategs;
