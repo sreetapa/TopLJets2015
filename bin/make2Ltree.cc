@@ -241,7 +241,9 @@ int main(int argc, char* argv[])
 
   outTree->Branch("weight", &t_weight, "weight/F");
 
+  // centrality and 9 flavors of rho
   outTree->Branch("cenbin", &t_cenbin, "cenbin/F");
+
   outTree->Branch("chrho" , &t_chrho , "chrho/F");
   outTree->Branch("nhrho" , &t_nhrho , "nhrho/F");
   outTree->Branch("phorho", &t_phorho, "phorho/F");
@@ -249,14 +251,17 @@ int main(int argc, char* argv[])
   outTree->Branch("etrig" , &t_etrig , "etrig/I");
   outTree->Branch("mtrig" , &t_mtrig , "mtrig/I");
 
-  // variables per lepton
+  // variables per lepton, including iso
   Int_t t_nlep;
-  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi;
+  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_phiso, t_lep_chiso, t_lep_chiso;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
   outTree->Branch("nlep"      , &t_nlep      , "nlep/I"            );
   outTree->Branch("lep_pt"    , &t_lep_pt    );
   outTree->Branch("lep_eta"   , &t_lep_eta   );
   outTree->Branch("lep_phi"   , &t_lep_phi   );
+  outTree->Branch("lep_phiso" , &t_lep_phiso   );
+  outTree->Branch("lep_chiso" , &t_lep_chiso   );
+  outTree->Branch("lep_nhiso" , &t_lep_nhiso   );
   outTree->Branch("lep_pdgId" , &t_lep_pdgId );
   outTree->Branch("lep_charge", &t_lep_charge);
 
@@ -299,30 +304,51 @@ int main(int argc, char* argv[])
   outTree->Branch("apt"    , &t_apt    , "apt/F");
   outTree->Branch("dphilll2"    , &t_dphilll2    , "dphilll2/F");
 
-  Float_t t_bdt, t_bdt_rarity;
+  Float_t t_bdt, t_bdt_rarity, t_fisher2;
   outTree->Branch("bdt", &t_bdt, "bdt/F");
   outTree->Branch("bdtrarity", &t_bdt_rarity, "bdtrarity/F");
+  outTree->Branch("fisher2", &t_fisher2, "fisher2/F");
   // =============================================================
   //
   TMVA::Tools::Instance();
-  TMVA::Reader *reader = new TMVA::Reader( "!Color:!Silent" );
+  TMVA::Reader *reader        = new TMVA::Reader( "!Color:!Silent" );
+  TMVA::Reader *readerFisher2 = new TMVA::Reader( "!Color:!Silent" );
 
   // make new variables because i'm too lazy to think right now
-  Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2;
+  Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2, bdt_sumabseta, bdt_flavor;
 
   // these must have the same name as in the training. and the same ordeeeeeeer
+  // copy directly from the script that runs the training:
+  //dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'     , 'GeV' , 'F')
+  //dataloader.AddVariable('apt'        , 'A_{pt}'           , ''    , 'F')
+  //dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+  //dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
+  //dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
+  //dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
+  //dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'F')
+  //
   reader->AddVariable("lep_pt[0]"  , &bdt_l1pt    );
   reader->AddVariable("apt"        , &bdt_apt     );
   reader->AddVariable("llpt"       , &t_llpt      );
   reader->AddVariable("abs(lleta)" , &bdt_abslleta);
   reader->AddVariable("dphi"       , &t_dphi      );
-  reader->AddVariable("dphilll2"   , &bdt_dphilll2);
-  // not there anymore reader->AddSpectator("llm"       , &t_llm       );
+  reader->AddVariable("abs(lep_eta[0])+abs(lep_eta[1])", &bdt_sumabseta);
+  reader->AddVariable("abs(lep_pdgId[0]*lep_pdgId[1])" , &bdt_flavor);
 
-  TString methodName("BDTG method");
+  // for the fisher just take these two
+  //dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+  //dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
+  readerFisher2->AddVariable("llpt", &t_llpt);
+  readerFisher2->AddVariable("dphi", &t_dphi);
+
+  TString methodName       ("BDTG method");
+  TString methodNameFisher2("Fisher method");
   // hard coded path for now ...
-  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_sixBestNew/weights/TMVAClassification_BDTG.weights.xml");
+  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_sevenVars_includeEMuZ/weights/TMVAClassification_BDTG.weights.xml");
   reader->BookMVA( methodName, weightFile);
+
+  TString weightFileFisher2("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_Fisher2_includeEMuZ/weights/TMVAClassification_Fisher.weights.xml");
+  readerFisher2->BookMVA( methodNameFisher2, weightFileFisher2);
 
     
   Double_t wgtSum(0);
@@ -924,6 +950,9 @@ int main(int argc, char* argv[])
         t_lep_pt .push_back( selLeptons[ilep].Pt()  );
         t_lep_eta.push_back( selLeptons[ilep].Eta() );
         t_lep_phi.push_back( selLeptons[ilep].Phi() );
+        t_lep_phiso.push_back( 10. );
+        t_lep_chiso.push_back( 20. );
+        t_lep_nhiso.push_back( 30. );
         t_lep_pdgId .push_back( selLeptonsPdgIds[ilep] );
         t_lep_charge.push_back( TMath::Power(-1.,selLeptonsPdgIds[ilep] > 0));
       }
@@ -933,6 +962,9 @@ int main(int argc, char* argv[])
         t_lep_pt .push_back( selLeptons[ilep].Pt()  );
         t_lep_eta.push_back( selLeptons[ilep].Eta() );
         t_lep_phi.push_back( selLeptons[ilep].Phi() );
+        t_lep_phiso.push_back( 10. );
+        t_lep_chiso.push_back( 20. );
+        t_lep_nhiso.push_back( 30. );
         t_lep_pdgId .push_back( selLeptonsPdgIds[ilep] );
         t_lep_charge.push_back( TMath::Power(-1.,selLeptonsPdgIds[ilep] > 0));
       }
@@ -968,11 +1000,15 @@ int main(int argc, char* argv[])
     bdt_abslleta = fabs(t_lleta);
     bdt_dphilll2 = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
 
+    bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
+    bdt_flavor = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
+
 
     t_apt = bdt_apt;
     t_dphilll2 = bdt_dphilll2;
-    t_bdt = reader->EvaluateMVA( "BDTG method" );
-    t_bdt_rarity = reader->GetRarity( "BDTG method" );
+    t_bdt        = reader->EvaluateMVA( methodName );
+    t_bdt_rarity = reader->GetRarity  ( methodName );
+    t_fisher2    = readerFisher2->EvaluateMVA( methodNameFisher2 );
 
     outTree->Fill();
 
