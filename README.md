@@ -17,9 +17,9 @@ make2Ltree --in /eos/cms/store/cmst3/group/hintt/PbPb2018/SkimElectrons_PromptRe
 To loop over all the available forest trees better to use condor and then merge the outputs.
 Jobs finalize in approximately 30min if queues are empty.
 ```
-dir=/eos/cms/store/cmst3/group/top/PbPb
+dir=/eos/cms/store/cmst3/group/hintt/PbPb2018/
 a=(`ls ${dir}`)
-out=`pwd`/plots/Chunks
+out=/eos/cms/store/cmst3/group/hintt/PbPb2018_skim4Apr
 for tag in ${a[@]}; do    
     extraOpts="true true"
     if [[ $tag == *"Skim"* ]]; then

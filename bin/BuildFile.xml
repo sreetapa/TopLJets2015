@@ -3,7 +3,6 @@
 <use name="root"/>
 <use name="roottmva"/>
 <environment>
-  <bin name="runTTto2Lselection" file="runTTto2Lselection.cc"></bin>
   <bin name="make2Ltree"         file="make2Ltree.cc"></bin>
 </environment>
 <Flags CXXFLAGS="-g"/>
