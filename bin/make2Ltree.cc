@@ -221,10 +221,12 @@ int main(int argc, char* argv[])
 
   TChain *rhoTree_p = new TChain("hiFJRhoAnalyzer/t");
   rhoTree_p->Add(inURL);
-  std::vector<float> t_rho,t_rhom;
+  std::vector<Double_t> *t_rho=0,*t_rhom=0;
   if(rhoTree_p){
     rhoTree_p->SetBranchAddress("rho", &t_rho);
     rhoTree_p->SetBranchAddress("rhom", &t_rhom);
+  }else{
+    std::cout << "[WARN] Can't find rho tree hiFJRhoAnalyzer/t" << std::endl;
   }
 
   
@@ -247,8 +249,8 @@ int main(int argc, char* argv[])
   // centrality and different flavors of rho
   outTree->Branch("cenbin", &t_cenbin, "cenbin/F");
   
-  outTree->Branch("rho", &t_rho);
-  outTree->Branch("rhom", &t_rhom);
+  outTree->Branch("rho",    &t_rho);
+  outTree->Branch("rhom",   &t_rhom);
   outTree->Branch("chrho" , t_chrho , "chrho[3]/F");
   outTree->Branch("nhrho" , t_nhrho , "nhrho[3]/F");
   outTree->Branch("phorho", t_phorho, "phorho[3]/F");
@@ -362,7 +364,6 @@ int main(int argc, char* argv[])
   int nEntries = (int)lepTree_p->GetEntries();  
   int entryDiv = ((int)(nEntries/20));    
   cout << inURL << " has " << nEntries << " events to process" << endl;
-  nEntries=1000;
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
@@ -786,6 +787,7 @@ int main(int argc, char* argv[])
     t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
 
     outTree->Fill();
+    break;
   }
 
   //save histos to file  
