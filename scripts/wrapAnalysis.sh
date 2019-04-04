@@ -23,7 +23,7 @@ if [ ! -z "${isPP}" ]; then
 fi
 opts="--in ${input} --out tto2l.root ${extraOpts}"
 
-echo "Calling runTTto2Lselection with [${opts}]"
+echo "Calling make2Ltree with [${opts}]"
 make2Ltree ${opts}
 cp -v tto2l.root ${output}
 

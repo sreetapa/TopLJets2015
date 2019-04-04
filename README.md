@@ -34,6 +34,11 @@ Check that all the jobs ran fine and re-run locally if needed
 python scripts/checkCondorJobs.py ./
 ```
 
+Or you can resubmit them to the batch if there are too many. this will prompt you whether you actually want to resubmit.
+```
+python scripts/resubmitMissing.py ./
+```
+
 Merge the outputs (hadds all the chunks according to the tag defined)
 ```
 python scripts/mergeOutputs.py plots
