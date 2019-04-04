@@ -17,6 +17,7 @@
 #include "HeavyIonsAnalysis/topskim/include/LumiRun.h"
 #include "HeavyIonsAnalysis/topskim/include/HistTool.h"
 #include "HeavyIonsAnalysis/topskim/include/PFAnalysis.h"
+#include "HeavyIonsAnalysis/topskim/include/LeptonSummary.h"
 
 #include "fastjet/ClusterSequence.hh"
 #include "fastjet/tools/JetMedianBackgroundEstimator.hh"
@@ -29,9 +30,6 @@
 
 
 const bool isDebug = true;
-
-enum ElectronIDs{LOOSE,TIGHT};
-const int applyEleID=LOOSE;
 const float lepPtCut  = 20.;
 const float lepEtaCut = 2.1;
 //see https://indico.cern.ch/event/803679/contributions/3342407/attachments/1808912/2953435/egm-minipog-190308.pdf
@@ -78,10 +76,9 @@ static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 }
 
 
-typedef std::tuple<int,TLorentzVector> LeptonInfo_t;
-static bool orderByPt(const LeptonInfo_t &a, const LeptonInfo_t &b)
+static bool orderByPt(const LeptonSummary &a, const LeptonSummary &b)
 {
-  float pt_a(std::get<1>(a).Pt()), pt_b(std::get<1>(b).Pt());
+  float pt_a(a.p4.Pt()), pt_b(b.p4.Pt());
   if(pt_a>pt_b) return true;
   return false;
 }
@@ -221,6 +218,15 @@ int main(int argc, char* argv[])
     hltTree_p->SetBranchStatus("HLT_HIEle20Gsf_v1",1);
     hltTree_p->SetBranchAddress("HLT_HIEle20Gsf_v1",&etrig);    
   }
+
+  TChain *rhoTree_p = new TChain("hiFJRhoAnalyzer/t");
+  rhoTree_p->Add(inURL);
+  std::vector<float> t_rho,t_rhom;
+  if(rhoTree_p){
+    rhoTree_p->SetBranchAddress("rho", &t_rho);
+    rhoTree_p->SetBranchAddress("rhom", &t_rhom);
+  }
+
   
   // =============================================================
   // marc here make the output tree
@@ -238,9 +244,11 @@ int main(int argc, char* argv[])
 
   outTree->Branch("weight", &t_weight, "weight/F");
 
-  // centrality and 9 flavors of rho
+  // centrality and different flavors of rho
   outTree->Branch("cenbin", &t_cenbin, "cenbin/F");
-
+  
+  outTree->Branch("rho", &t_rho);
+  outTree->Branch("rhom", &t_rhom);
   outTree->Branch("chrho" , t_chrho , "chrho[3]/F");
   outTree->Branch("nhrho" , t_nhrho , "nhrho[3]/F");
   outTree->Branch("phorho", t_phorho, "phorho[3]/F");
@@ -250,26 +258,28 @@ int main(int argc, char* argv[])
 
   // variables per lepton, including iso
   Int_t t_nlep;
-  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_phiso, t_lep_chiso, t_lep_nhiso;
+  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_chrho, t_lep_nhrho, t_lep_phrho;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
   outTree->Branch("nlep"      , &t_nlep      , "nlep/I"            );
-  outTree->Branch("lep_pt"    , &t_lep_pt    );
-  outTree->Branch("lep_eta"   , &t_lep_eta   );
-  outTree->Branch("lep_phi"   , &t_lep_phi   );
-  outTree->Branch("lep_phiso" , &t_lep_phiso   );
-  outTree->Branch("lep_chiso" , &t_lep_chiso   );
-  outTree->Branch("lep_nhiso" , &t_lep_nhiso   );
-  outTree->Branch("lep_pdgId" , &t_lep_pdgId );
+  outTree->Branch("lep_pt"    , &t_lep_pt);
+  outTree->Branch("lep_eta"   , &t_lep_eta);
+  outTree->Branch("lep_phi"   , &t_lep_phi);
+  outTree->Branch("lep_phiso" , &t_lep_phiso);
+  outTree->Branch("lep_chiso" , &t_lep_chiso);
+  outTree->Branch("lep_nhiso" , &t_lep_nhiso);
+  outTree->Branch("lep_rho"   , &t_lep_rho);
+  outTree->Branch("lep_phrho" , &t_lep_phrho);
+  outTree->Branch("lep_chrho" , &t_lep_chrho);
+  outTree->Branch("lep_nhrho" , &t_lep_nhrho);
+  outTree->Branch("lep_pdgId" , &t_lep_pdgId);
   outTree->Branch("lep_charge", &t_lep_charge);
 
-  
   // variables from dilepton system
   Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
   outTree->Branch("llpt"   , &t_llpt   , "llpt/F");
   outTree->Branch("lleta"  , &t_lleta  , "lleta/F");
   outTree->Branch("llphi"  , &t_llphi  , "llphi/F");
   outTree->Branch("llm"    , &t_llm    , "llm/F");
-
   outTree->Branch("dphi"   , &t_dphi   , "dphi/F");
   outTree->Branch("deta"   , &t_deta   , "deta/F");
   outTree->Branch("sumeta" , &t_sumeta , "sumeta/F");
@@ -370,12 +380,19 @@ int main(int argc, char* argv[])
     //first of all require a trigger
     int trig=etrig+mtrig;
     if(trig==0) continue;
+    if(isSingleMuPD) {
+      if(mtrig==0) continue;
+      if(etrig!=0) continue;
+    }
+    if(isSingleElePD) {
+      if(etrig==0) continue;
+    }
 
+    //FIXME: WHAT SHOULD WE DO HERE ?
     //apply global filters
     //if(!isPP){
     //  if(TMath::Abs(fForestTree.vz) > 15) continue;
     // }
-
 
     //build jets from different PF candidate collections   
     SlimmedPFCollection_t pfColl;
@@ -393,8 +410,10 @@ int main(int argc, char* argv[])
 
     //monitor trigger and centrality
     float cenBin=0;
+    bool isCentralEvent(false);
     if(!isMC){
       cenBin=0.5*fForestTree.hiBin;
+      isCentralEvent=(!isPP && cenBin<30);
       Int_t runBin=lumiTool.getRunBin(fForestTree.run);
       Float_t lumi=lumiTool.getLumi(fForestTree.run);
       if(lumi>0.){
@@ -403,8 +422,11 @@ int main(int argc, char* argv[])
       }
     }
 
+    //the selected leptons
+    std::vector<LeptonSummary> selLeptons;
+
     //select muons
-    std::vector<LeptonInfo_t> mu,noIdMu;
+    std::vector<LeptonSummary> noIdMu;
     for(unsigned int muIter = 0; muIter < fForestMu.muPt->size(); ++muIter) {
 
       //kinematics selection
@@ -413,7 +435,17 @@ int main(int argc, char* argv[])
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(p4.Pt() < lepPtCut) continue;
 
-      noIdMu.push_back(LeptonInfo_t(muIter,p4));
+      LeptonSummary l(13,p4);
+      l.charge  = fForestMu.muCharge->at(muIter);
+      l.chiso   = fForestMu.muPFChIso->at(muIter);
+      l.nhiso   = fForestMu.muPFNeuIso->at(muIter);
+      l.phoiso  = fForestMu.muPFPhoIso->at(muIter);
+      l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);
+      l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
+      l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
+      l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
+      l.origIdx = muIter;
+      noIdMu.push_back(l);
 
       //id (Tight muon requirements)
       int type=fForestMu.muType->at(muIter);
@@ -430,17 +462,16 @@ int main(int argc, char* argv[])
       if(TMath::Abs(fForestMu.muInnerDz->at(muIter)) >=0.5) continue;
 
       //selected a good muon
-      mu.push_back(LeptonInfo_t(muIter,p4));
+      selLeptons.push_back(l);
     }
     std::sort(noIdMu.begin(),noIdMu.end(),orderByPt);
-    std::sort(mu.begin(),mu.end(),orderByPt);
 
 
     //monitor muon id variables
     if(noIdMu.size()>1) {
-      TLorentzVector p4[2] = {std::get<1>(noIdMu[0]),std::get<1>(noIdMu[1])};
-      int midx[2]          = {std::get<0>(noIdMu[0]),std::get<0>(noIdMu[1])};
-      int charge(fForestMu.muCharge->at(midx[0])*fForestMu.muCharge->at(midx[1]));
+      TLorentzVector p4[2] = {noIdMu[0].p4,      noIdMu[1].p4};
+      int midx[2]          = {noIdMu[0].origIdx, noIdMu[1].origIdx};
+      int charge(noIdMu[0].charge*noIdMu[1].charge);
       if( fabs((p4[0]+p4[1]).M()-91)<15 ) {
         TString cat("zmmctrl");
         if(charge>0) cat="ss"+cat;
@@ -458,7 +489,7 @@ int main(int argc, char* argv[])
        
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
-    std::vector<LeptonInfo_t> ele,noIdEle;
+    std::vector<LeptonSummary> noIdEle;
     for(unsigned int eleIter = 0; eleIter < fForestEle.elePt->size(); ++eleIter) {
       
       //kinematics selection
@@ -472,42 +503,51 @@ int main(int argc, char* argv[])
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
       if(p4.Pt() < lepPtCut) continue;	      
-
-      noIdEle.push_back(LeptonInfo_t(eleIter,p4));
       
-      //electron id (separate for EB and EE)
-      bool isEB(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]);
-      if(applyEleID==TIGHT) {
-        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)>=(isEB?0.009630:0.042415)) continue;
-        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB?0.00661:0.007572)) continue;
-        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB?0.019314:0.016572)) continue;
-        if(fForestEle.eleHoverE->at(eleIter)>=(isEB?0.142968:0.145809)) continue;
-        if(fForestEle.eleEoverPInv->at(eleIter)>=(isEB?0.010806:0.008948)) continue;
-        if(TMath::Abs(fForestEle.eleD0->at(eleIter))>=(isEB?0.007551:0.09230)) continue;
-        if(TMath::Abs(fForestEle.eleDz->at(eleIter))>=(isEB?0.015361:0.015449)) continue;
+      LeptonSummary l(11,p4);
+      l.charge  = fForestEle.eleCharge->at(eleIter);
+      l.chiso   = fForestEle.elePFChIso03->at(eleIter);
+      l.nhiso   = fForestEle.elePFNeuIso03->at(eleIter);
+      l.phoiso  = fForestEle.elePFPhoIso03->at(eleIter);
+      l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);
+      l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
+      l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
+      l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
+      l.origIdx=eleIter;
+      noIdEle.push_back(l);
+      
+      //electron id (separate for EB and EE, depending on centrality)
+      //see https://indico.cern.ch/event/811374/contributions/3382348/attachments/1823016/2983559/HIN_electrons2018_centrDep.pdf
+      bool isEB(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]);      
+      if(isCentralEvent){
+        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.012 : 0.048)) continue;
+        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.006 : 0.008)) continue;
+        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.027 : 0.067)) continue;
+        if(fForestEle.eleHoverE->at(eleIter)               >=(isEB ? 0.150 : 0.150)) continue;
+        if(fForestEle.eleEoverPInv->at(eleIter)            >=(isEB ? 0.040 : 0.250)) continue;
+        if(TMath::Abs(fForestEle.eleD0->at(eleIter))       >=(isEB ? 0.011 : 0.083)) continue;
+        if(TMath::Abs(fForestEle.eleDz->at(eleIter))       >=(isEB ? 0.037 : 0.028)) continue;
       }
-      else if(applyEleID==LOOSE) {
-        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)>=(isEB?0.011122:0.045489)) continue;
-        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB?0.007627:0.014374)) continue;
-        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB?0.028118:0.030909)) continue;
-        if(fForestEle.eleHoverE->at(eleIter)>=(isEB?0.149803:0.147656)) continue;
-        if(fForestEle.eleEoverPInv->at(eleIter)>=(isEB?0.027230:0.030291)) continue;
-        if(TMath::Abs(fForestEle.eleD0->at(eleIter))>=(isEB?0.023967:0.018704)) continue;
-        if(TMath::Abs(fForestEle.eleDz->at(eleIter))>=(isEB?0.031008:0.041391)) continue;
+      else {
+        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.010 : 0.041)) continue;
+        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.007 : 0.011)) continue;
+        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.021 : 0.026)) continue;
+        if(fForestEle.eleHoverE->at(eleIter)               >=(isEB ? 0.130 : 0.150)) continue;
+        if(fForestEle.eleEoverPInv->at(eleIter)            >=(isEB ? 0.020 : 0.330)) continue;
+        if(TMath::Abs(fForestEle.eleD0->at(eleIter))       >=(isEB ? 0.008 : 0.015)) continue;
+        if(TMath::Abs(fForestEle.eleDz->at(eleIter))       >=(isEB ? 0.020 : 0.045)) continue;
       }
 
-      //selected electron
-      ele.push_back(LeptonInfo_t(eleIter,p4));      
+      //id'ed electron
+      selLeptons.push_back(l);
     }
-    std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);
-    std::sort(ele.begin(),ele.end(),orderByPt);
-       
+    std::sort(noIdEle.begin(),noIdEle.end(),orderByPt);       
 
     //monitor electron id variables
     if(noIdEle.size()>1) {
-      TLorentzVector p4[2] = {std::get<1>(noIdEle[0]),std::get<1>(noIdEle[1])};
-      int eidx[2]          = {std::get<0>(noIdEle[0]),std::get<0>(noIdEle[1])};
-      int charge(fForestEle.eleCharge->at(eidx[0])*fForestEle.eleCharge->at(eidx[1]));
+      TLorentzVector p4[2] = {noIdEle[0].p4,noIdEle[1].p4};
+      int eidx[2]          = {noIdEle[0].origIdx,noIdEle[1].origIdx};
+      int charge(noIdEle[0].charge*noIdEle[1].charge);
       if( fabs((p4[0]+p4[1]).M()-91)<15 ) {
         TString basecat("zeectrl");
         if(charge>0) basecat="ss"+basecat;
@@ -525,108 +565,35 @@ int main(int argc, char* argv[])
       }
     }
 
+    //sort selected electrons by pt
+    std::sort(selLeptons.begin(),selLeptons.end(),orderByPt);
 
-    //check if all electrons are barrel
-    bool allEleInEB(true);
-    for(size_t i=0; i<min(ele.size(),size_t(2)); i++){
-      float abseta(fabs(std::get<1>(ele[i]).Eta()));
-      if(abseta>barrelEndcapEta[1]) allEleInEB=false;
-    }
-
-    int nLep=mu.size()+ele.size();
-    if(nLep<2) continue;
-
-    std::vector<TLorentzVector> selLeptons;
-    std::vector<int>            selLeptonsPdgIds;
-    int dilCode(0);
-    int charge(0);    
-    TLorentzVector ll(0,0,0,0);
-    vector< std::tuple<float,float,float> > liso;
-    if(mu.size()>1 && mtrig>0) {
-
-      //muon final states from the muon PD only
-      if(!isMC && !isSingleMuPD) continue;
-      
-      dilCode=13*13;
-      selLeptons.push_back(std::get<1>(mu[0]));
-      selLeptons.push_back(std::get<1>(mu[1]));
-      ll=selLeptons[0]+selLeptons[1];
-      int muIdx[2]={std::get<0>(mu[0]),std::get<0>(mu[1])};
-      selLeptonsPdgIds.push_back(-13*fForestMu.muCharge->at(muIdx[0]));
-      selLeptonsPdgIds.push_back(-13*fForestMu.muCharge->at(muIdx[1]));
-      charge=fForestMu.muCharge->at(muIdx[0])*fForestMu.muCharge->at(muIdx[1]);
-      for(size_t i=0; i<2; i++){
-        float chIso( fForestMu.muPFChIso->at(muIdx[i]) );
-        float phoIso( fForestMu.muPFPhoIso->at(muIdx[i]) );
-        float neutIso( fForestMu.muPFNeuIso->at(muIdx[i]) );        
-        liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
-      }
-    }
-    else if(mu.size()>0 && ele.size()>0 && (etrig>0 || mtrig>0)) {
-
-      //simultaneous triggering only in the single muon PD
-      //to avoid double counting
-      if(!isMC && etrig>0 && mtrig>0 && isSingleElePD) continue;
-      
-      dilCode=11*13;
-      selLeptons.push_back(std::get<1>(mu[0]));
-      selLeptons.push_back(std::get<1>(ele[0]));
-      ll=selLeptons[0]+selLeptons[1];
-      int lIdx[2]={std::get<0>(mu[0]),std::get<0>(ele[0])};
-      selLeptonsPdgIds.push_back(-13*fForestMu .muCharge ->at(lIdx[0]));
-      selLeptonsPdgIds.push_back(-11*fForestEle.eleCharge->at(lIdx[1]));
-      charge=fForestMu.muCharge->at(lIdx[0])*fForestEle.eleCharge->at(lIdx[1]);            
-      float chIso( fForestMu.muPFChIso->at(lIdx[0]) );
-      float phoIso( fForestMu.muPFPhoIso->at(lIdx[0]) );
-      float neutIso( fForestMu.muPFNeuIso->at(lIdx[0]) );        
-
-      liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
-      chIso=fForestEle.elePFChIso03->at(lIdx[1]);
-      phoIso=fForestEle.elePFPhoIso03->at(lIdx[1]);
-      neutIso=fForestEle.elePFNeuIso03->at(lIdx[1]);        
-      liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
-    }
-    else if(ele.size()>1 && etrig>0) {
-
-      //ee final states from the electron PD only 
-      if(!isMC && !isSingleElePD) continue;
-
-      dilCode=11*11;
-      selLeptons.push_back(std::get<1>(ele[0]));
-      selLeptons.push_back(std::get<1>(ele[1]));
-      ll=selLeptons[0]+selLeptons[1];
-      int eleIdx[2]={std::get<0>(ele[0]),std::get<0>(ele[1])};
-      selLeptonsPdgIds.push_back(-11*fForestEle.eleCharge->at(eleIdx[0]));
-      selLeptonsPdgIds.push_back(-11*fForestEle.eleCharge->at(eleIdx[1]));
-      charge=fForestEle.eleCharge->at(eleIdx[0])*fForestEle.eleCharge->at(eleIdx[1]);
-      for(size_t i=0; i<2; i++){
-        float chIso=fForestEle.elePFChIso03->at(eleIdx[i]);
-        float phoIso=fForestEle.elePFPhoIso03->at(eleIdx[i]);
-        float neutIso=fForestEle.elePFNeuIso03->at(eleIdx[i]);        
-        liso.push_back( std::make_tuple(chIso,phoIso,neutIso) );
-      }
-    }else{
-      continue;
-    }
- 
-    if(ll.M()<20) continue;
-    bool isZ( dilCode!=11*13 && fabs(ll.M()-91)<15 );
+    //apply basic preselection
+    if(mtrig+etrig==0) continue;
+    if(selLeptons.size()<2) continue;
+    TLorentzVector ll(selLeptons[0].p4+selLeptons[1].p4);
+    t_llpt=ll.Pt();
+    t_lleta=ll.Eta();
+    t_llphi=ll.Phi();
+    t_llm=ll.M();
+    t_dphi=selLeptons[0].p4.DeltaPhi(selLeptons[1].p4);
+    t_deta=fabs(selLeptons[0].p4.Eta()-selLeptons[1].p4.Eta());
+    t_sumeta=selLeptons[0].p4.Eta()+selLeptons[1].p4.Eta();
+    int dilCode(selLeptons[0].id*selLeptons[1].id);
+    TString dilCat("mm");
+    if(dilCode==11*13) dilCat="em";
+    if(dilCode==11*11) dilCat="ee";
 
     if(blind) {
+      bool isZ( fabs(t_llm-91)<15);
+      int charge(selLeptons[0].charge*selLeptons[1].charge);
       if(!isMC && !isZ && charge<0 && fForestTree.run>=326887) continue;
     }
 
-    TString dilCat("em");
-    if(dilCode==11*11) { dilCat=isZ ? "zee" : "ee"; }
-    if(dilCode==13*13) { dilCat=isZ ? "zmm" : "mm"; }    
-    if(charge>0) dilCat="ss"+dilCat;
-
-   
-    //b-tag jet the track jets by matching in deltaR to PF jets
-    std::vector<BtagInfo_t> pfJetsIdx;
-    std::vector<TLorentzVector> pfJetsP4;
+    //analyze jets
+    std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
+    std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4;
     int npfjets(0),npfbjets(0); 
-    bool allPFBInEB(true);//,hasAwayPFJet(true);
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
       //at least two tracks
@@ -634,7 +601,6 @@ int main(int argc, char* argv[])
 
       TLorentzVector jp4(0,0,0,0);
       jp4.SetPtEtaPhiM( fForestJets.jtpt[jetIter],fForestJets.jteta[jetIter],fForestJets.jtphi[jetIter],fForestJets.jtm[jetIter]);
-      if(jp4.DeltaR(selLeptons[0])<0.4 || jp4.DeltaR(selLeptons[1])<0.4) continue;            
 
       float csvVal=fForestJets.discr_csvV2[jetIter];
       int nsvtxTk=fForestJets.svtxntrk[jetIter];
@@ -643,45 +609,27 @@ int main(int argc, char* argv[])
       if(jp4.Pt()<30.) continue;
       if(fabs(jp4.Eta())>2.4) continue;
       bool isBTagged(csvVal>csvWP);      
-      pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal));
-      pfJetsP4.push_back(jp4);
-      npfjets++;
-      npfbjets += isBTagged;
-      if(isBTagged && fabs(jp4.Eta())>1.2) allPFBInEB=false;
-    }
-    std::sort(pfJetsIdx.begin(),      pfJetsIdx.end(),      orderByBtagInfo);
 
-    //fill control histograms
+      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal) );
+      nodr_pfJetsP4.push_back(jp4);
+
+      if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) {
+        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal));
+        pfJetsP4.push_back(jp4);
+        npfjets++;
+        npfbjets += isBTagged;
+      }
+    }
+    std::sort(pfJetsIdx.begin(),       pfJetsIdx.end(),      orderByBtagInfo);
+    std::sort(nodr_pfJetsIdx.begin(),  nodr_pfJetsIdx.end(), orderByBtagInfo);
+
+    //define categories for pre-selection control histograms
     std::vector<TString> categs;
     categs.push_back(dilCat);
 
-    //monitor where the electrons are reconstructed
-    if(dilCode==11*11 || dilCode==11*13){
-
-      bool l1EE(fabs(selLeptons[0].Eta())>barrelEndcapEta[1]);
-      bool l2EE(fabs(selLeptons[1].Eta())>barrelEndcapEta[1]);
-      TString etaCateg(l2EE ? "E" : "B");
-      if(dilCode==11*11) etaCateg += l1EE ? "E" : "B";
-      categs.push_back(dilCat+etaCateg);
-
-      /*
-      if(isZ) {
-        if(ntkjets==1 && hasAwayTkJet) {
-          categs.push_back(dilCat+"awaytkj");
-          categs.push_back(dilCat+etaCateg+"awaytkj");
-        }
-        if(npfjets==1 && hasAwayPFJet) {
-          categs.push_back(dilCat+"awaypfj");
-          categs.push_back(dilCat+etaCateg+"awaypfj");
-        }
-      }
-      */
-    }
-    
-
     std::vector<TString> addCategs;
 
-    //monitor also after run where EE scale shift changed
+    //monitor after run where EE scale shift changed
     if(!isPP){
       addCategs.clear();
       TString pf( fForestTree.run>=firstEEScaleShiftRun ? "after" : "before" );
@@ -694,69 +642,43 @@ int main(int argc, char* argv[])
     //monitor according to the b-tagging category
     addCategs.clear();
     TString pfbcat(Form("%dpfb",min(npfbjets,2)));
-    //TString tkbcat(Form("%dtkb",min(nbtkjets,2)));
     for(auto c : categs) { 
       addCategs.push_back(c); 
-      //addCategs.push_back(c+tkbcat); 
       if(npfbjets==0) addCategs.push_back(c+"0pfb"); 
       if(npfbjets>0) addCategs.push_back(c+"geq1pfb"); 
-      if(npfbjets==1) addCategs.push_back(c+"eq1pfb"); 
-      if(npfbjets>1) addCategs.push_back(c+"geq2pfb");         
     }
     categs=addCategs;
 
-    //monitor according to the centrality of the jets and electrons
-    if(allEleInEB) {
-      addCategs.clear();
-      for(auto c: categs) {
-        addCategs.push_back(c);
-        if(allPFBInEB) addCategs.push_back(c+"allpfeb");
-      }
-      categs=addCategs;
-    }
-
+    
+    //fill histogams
     for(int i=0; i<2; i++) {
       TString pf(Form("l%d",i+1));
-      float pt(selLeptons[i].Pt());
-      ht.fill(pf+"pt",        pt,                         plotWgt, categs);
-      ht.fill(pf+"eta",       fabs(selLeptons[i].Eta()),  plotWgt, categs);
-      float chiso(std::get<0>(liso[i]));
-      float phoiso(std::get<1>(liso[i]));
-      float nhiso(std::get<2>(liso[i]));
+      float pt(selLeptons[i].p4.Pt());
+      ht.fill(pf+"pt",             pt,                            plotWgt, categs);
+      ht.fill(pf+"eta",            fabs(selLeptons[i].p4.Eta()),  plotWgt, categs);
+      ht.fill(pf+"chiso",          selLeptons[i].chiso,           plotWgt, categs);
+      ht.fill(pf+"phoiso",         selLeptons[i].phoiso,          plotWgt, categs);
+      ht.fill(pf+"nhiso",          selLeptons[i].nhiso,           plotWgt, categs);
 
-      ht.fill(pf+"chiso",          chiso,     plotWgt, categs);
-      ht.fill(pf+"chreliso",       chiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"chisovscen",   cenBin,    chiso,   plotWgt, categs);
-      ht.fill2D(pf+"chisovsrho",   chrho[0],     chiso,   plotWgt, categs);
-
-      ht.fill(pf+"phoiso",        phoiso,     plotWgt,  categs);
-      ht.fill(pf+"phoreliso",     phoiso/pt,  plotWgt,  categs);
-      ht.fill2D(pf+"phoisovscen", cenBin,     phoiso,   plotWgt, categs);
-      ht.fill2D(pf+"phoisovsrho", phorho[0],     phoiso,   plotWgt, categs);
-
-      ht.fill(pf+"nhiso",        nhiso,     plotWgt, categs);
-      ht.fill(pf+"nhreliso",     nhiso/pt,  plotWgt, categs);
-      ht.fill2D(pf+"nhisovscen", cenBin,    nhiso,   plotWgt, categs);
-      ht.fill2D(pf+"nhisovsrho", nhrho[0],  nhiso,   plotWgt, categs);
     }
 
-    ht.fill( "acopl",     1-fabs(selLeptons[0].DeltaPhi(selLeptons[1]))/TMath::Pi(), plotWgt, categs);
-    ht.fill( "detall",    fabs(selLeptons[0].Eta()-selLeptons[1].Eta()), plotWgt, categs);
-    ht.fill( "drll",      selLeptons[0].DeltaR(selLeptons[1]),           plotWgt, categs);
-    ht.fill( "mll",       ll.M(),                                        plotWgt, categs);
-    ht.fill( "ptll",      ll.Pt(),                                       plotWgt, categs);
-    ht.fill( "ptsum",     selLeptons[0].Pt()+selLeptons[1].Pt(),         plotWgt, categs);
+    ht.fill( "acopl",     1-fabs(t_dphi)/TMath::Pi(),                   plotWgt, categs);
+    ht.fill( "detall",    t_deta,                                       plotWgt, categs);
+    ht.fill( "drll",      selLeptons[0].p4.DeltaR(selLeptons[1].p4),    plotWgt, categs);
+    ht.fill( "mll",       t_llm,                                        plotWgt, categs);
+    ht.fill( "ptll",      t_llpt,                                       plotWgt, categs);
+    ht.fill( "ptsum",     selLeptons[0].p4.Pt()+selLeptons[1].p4.Pt(),  plotWgt, categs);
 
-    ht.fill( "chrho",  chrho[0],            plotWgt, categs);
-    ht.fill( "phorho", phorho[0],            plotWgt, categs);
-    ht.fill( "nhrho",  nhrho[0],            plotWgt, categs);
+    ht.fill( "chrho",  chrho[0],   plotWgt, categs);
+    ht.fill( "phorho", phorho[0],  plotWgt, categs);
+    ht.fill( "nhrho",  nhrho[0],   plotWgt, categs);
 
     //PF jets
-    ht.fill( "npfjets",   npfjets,                                     plotWgt, categs);
-    ht.fill( "npfbjets",  npfbjets,                                    plotWgt, categs);
+    ht.fill( "npfjets",   npfjets,   plotWgt, categs);
+    ht.fill( "npfbjets",  npfbjets,  plotWgt, categs);
     std::vector<TLorentzVector> pfFinalState;
-    pfFinalState.push_back(selLeptons[0]);
-    pfFinalState.push_back(selLeptons[1]);
+    pfFinalState.push_back(selLeptons[0].p4);
+    pfFinalState.push_back(selLeptons[1].p4);
     for(size_t ij=0; ij<min(pfJetsIdx.size(),size_t(2)); ij++) {     
       int idx(std::get<0>(pfJetsIdx[ij]));
       int ntks(std::get<1>(pfJetsIdx[ij]));
@@ -768,10 +690,10 @@ int main(int argc, char* argv[])
       ht.fill( "pf"+ppf+"jbalance", p4.Pt()/ll.Pt(), plotWgt, categs);
       ht.fill( "pf"+ppf+"jpt",      p4.Pt(),         plotWgt, categs);
       ht.fill( "pf"+ppf+"jeta",     fabs(p4.Eta()),  plotWgt, categs);
-      ht.fill2D( "pf"+ppf+"jetavsphi",   p4.Eta(),p4.Phi(),   plotWgt, categs);
       ht.fill( "pf"+ppf+"jsvtxm",   ntks,            plotWgt, categs);
       ht.fill( "pf"+ppf+"jsvtxntk", svm,             plotWgt, categs);
       ht.fill( "pf"+ppf+"jcsv",     csv,             plotWgt, categs);
+      ht.fill2D( "pf"+ppf+"jetavsphi",   p4.Eta(),p4.Phi(),   plotWgt, categs);
     }
 
     std::vector<float> rapMoments=getRapidityMoments(pfFinalState);
@@ -788,27 +710,17 @@ int main(int argc, char* argv[])
     t_run    = fForestTree.run;
     t_lumi   = fForestTree.lumi;
     t_event  = fForestTree.evt;
-
     t_weight = plotWgt;
-
     t_cenbin = cenBin;
+    t_etrig  = etrig;
+    t_mtrig  = mtrig;
 
     for(size_t i=0; i<3; i++) {
       t_chrho[i]  = chrho[i];
       t_phorho[i] = phorho[i];
       t_nhrho[i]  = nhrho[i];
     }
-
-    t_etrig = etrig;
-    t_mtrig = mtrig;
-    t_llpt   = ll.Pt();
-    t_lleta  = ll.Eta();
-    t_llphi  = ll.Phi();
-    t_llm    = ll.M();
-    t_dphi   = fabs(selLeptons[0].DeltaPhi(selLeptons[1]));
-    t_deta   = fabs(selLeptons[0].Eta()-selLeptons[1].Eta());
-    t_sumeta = selLeptons[0].Eta()+selLeptons[1].Eta();
-
+ 
     // fill the leptons ordered by pt
     t_lep_pt    .clear();
     t_lep_eta   .clear();
@@ -818,32 +730,24 @@ int main(int argc, char* argv[])
     t_lep_chiso.clear();    
     t_lep_phiso.clear();
     t_lep_nhiso.clear();
-
+    t_lep_rho.clear();    
+    t_lep_chrho.clear();    
+    t_lep_phrho.clear();
+    t_lep_nhrho.clear();
     t_nlep = selLeptons.size();
-    bool revertOrder = selLeptons[1].Pt() > selLeptons[0].Pt() && dilCode == 11*13;
-    if (!revertOrder) {
-      for (int ilep = 0; ilep < t_nlep; ++ilep){
-        t_lep_pt .push_back( selLeptons[ilep].Pt()  );
-        t_lep_eta.push_back( selLeptons[ilep].Eta() );
-        t_lep_phi.push_back( selLeptons[ilep].Phi() );
-        t_lep_phiso.push_back( std::get<1>(liso[ilep]) );
-        t_lep_chiso.push_back( std::get<0>(liso[ilep]) );
-        t_lep_nhiso.push_back( std::get<2>(liso[ilep]) );
-        t_lep_pdgId .push_back( selLeptonsPdgIds[ilep] );
-        t_lep_charge.push_back( TMath::Power(-1.,selLeptonsPdgIds[ilep] > 0));
-      }
-    }
-    else {
-      for (int ilep = t_nlep-1; ilep >= 0; --ilep){
-        t_lep_pt .push_back( selLeptons[ilep].Pt()  );
-        t_lep_eta.push_back( selLeptons[ilep].Eta() );
-        t_lep_phi.push_back( selLeptons[ilep].Phi() );
-        t_lep_phiso.push_back( std::get<1>(liso[ilep]) );
-        t_lep_chiso.push_back( std::get<0>(liso[ilep]) );
-        t_lep_nhiso.push_back( std::get<2>(liso[ilep]) );
-        t_lep_pdgId .push_back( selLeptonsPdgIds[ilep] );
-        t_lep_charge.push_back( TMath::Power(-1.,selLeptonsPdgIds[ilep] > 0));
-      }
+    for (int ilep = 0; ilep < t_nlep; ++ilep){
+      t_lep_pt .push_back( selLeptons[ilep].p4.Pt()  );
+      t_lep_eta.push_back( selLeptons[ilep].p4.Eta() );
+      t_lep_phi.push_back( selLeptons[ilep].p4.Phi() );
+      t_lep_chiso.push_back( selLeptons[ilep].chiso );
+      t_lep_phiso.push_back( selLeptons[ilep].phoiso );
+      t_lep_nhiso.push_back( selLeptons[ilep].nhiso );
+      t_lep_rho.push_back( selLeptons[ilep].rho );
+      t_lep_chrho.push_back( selLeptons[ilep].chrho );
+      t_lep_phrho.push_back( selLeptons[ilep].phorho );
+      t_lep_nhrho.push_back( selLeptons[ilep].nhrho );
+      t_lep_pdgId .push_back( selLeptons[ilep].id );
+      t_lep_charge.push_back( selLeptons[ilep].charge );
     }
 
     // fill the jets ordered by b-tag
@@ -852,42 +756,34 @@ int main(int argc, char* argv[])
     t_bjet_phi  .clear();
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
-
-    t_nbjet = pfJetsIdx.size();
+    t_nbjet = nodr_pfJetsIdx.size();
     for (int ij = 0; ij < t_nbjet; ij++) {
-      int idx = std::get<0>(pfJetsIdx[ij]);
-      t_bjet_pt   .push_back( pfJetsP4[idx].Pt()  );
-      t_bjet_eta  .push_back( pfJetsP4[idx].Eta() );
-      t_bjet_phi  .push_back( pfJetsP4[idx].Phi() );
-      t_bjet_mass .push_back( pfJetsP4[idx].M()   );
-      t_bjet_csvv2.push_back( std::get<3>(pfJetsIdx[ij])   );
+      int idx = std::get<0>(nodr_pfJetsIdx[ij]);
+      t_bjet_pt   .push_back( nodr_pfJetsP4[idx].Pt()  );
+      t_bjet_eta  .push_back( nodr_pfJetsP4[idx].Eta() );
+      t_bjet_phi  .push_back( nodr_pfJetsP4[idx].Phi() );
+      t_bjet_mass .push_back( nodr_pfJetsP4[idx].M()   );
+      t_bjet_csvv2.push_back( std::get<3>(nodr_pfJetsIdx[ij])   );
     }
 
 
-    // std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
-    // t_njet;
-    // std::vector<Float_t> t_jet_pt, t_jet_eta, t_jet_phi, t_jet_mass, t_jet_csvv2;
     t_ht  = pfht;
     t_mht = vis.Pt();
 
     // now set the 4 variables that we added for the tmva reader for the bdt evaluation
-    bdt_l1pt = t_lep_pt[0];
-    bdt_apt =  (t_lep_pt[0]-t_lep_pt[1])/(t_lep_pt[0]+t_lep_pt[1]);
-    bdt_abslleta = fabs(t_lleta);
-    bdt_dphilll2 = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
-
+    bdt_l1pt      = t_lep_pt[0];
+    bdt_apt       = (t_lep_pt[0]-t_lep_pt[1])/(t_lep_pt[0]+t_lep_pt[1]);
+    bdt_abslleta  = fabs(t_lleta);
+    bdt_dphilll2  = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
     bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
-    bdt_flavor = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
-
-
-    t_apt = bdt_apt;
-    t_dphilll2 = bdt_dphilll2;
-    t_bdt        = reader->EvaluateMVA( methodName );
-    t_bdt_rarity = reader->GetRarity  ( methodName );
-    t_fisher2    = readerFisher2->EvaluateMVA( methodNameFisher2 );
+    bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
+    t_apt         = bdt_apt;
+    t_dphilll2    = bdt_dphilll2;
+    t_bdt         = reader->EvaluateMVA( methodName );
+    t_bdt_rarity  = reader->GetRarity  ( methodName );
+    t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
 
     outTree->Fill();
-
   }
 
   //save histos to file  
