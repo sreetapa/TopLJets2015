@@ -23,12 +23,13 @@ float getRho(SlimmedPFCollection_t &coll, std::vector<int> ids,float minAbsEta=-
   std::vector<fastjet::PseudoJet> cands;
   for(auto spf : coll) {
     if(spf.second.Pt()<minPt) continue;
-    float abseta(spf.second.Eta());
+    float abseta( fabs(spf.second.Eta()) );
     if(abseta<minAbsEta) continue;
     if(abseta>maxAbsEta) continue;
     if( std::find(ids.begin(),ids.end(),spf.first)==ids.end() ) continue;
     fastjet::PseudoJet ip(spf.second.Px(),spf.second.Py(),spf.second.Pz(),spf.second.E());
     ip.set_user_index(spf.first);
+    cands.push_back(ip);
   }
 
   fastjet::JetDefinition jet_def_for_rho(fastjet::kt_algorithm,0.5);

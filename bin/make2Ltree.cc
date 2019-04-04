@@ -362,6 +362,7 @@ int main(int argc, char* argv[])
   int nEntries = (int)lepTree_p->GetEntries();  
   int entryDiv = ((int)(nEntries/20));    
   cout << inURL << " has " << nEntries << " events to process" << endl;
+  nEntries=1000;
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
@@ -371,6 +372,7 @@ int main(int argc, char* argv[])
     jetTree_p->GetEntry(entry);    
     hltTree_p->GetEntry(entry);
     hiTree_p->GetEntry(entry);
+    if(rhoTree_p) rhoTree_p->GetEntry(entry);
 
     float evWgt(1.0);
     if(isMC && fForestTree.ttbar_w->size()) { evWgt=fForestTree.ttbar_w->at(0); }
@@ -404,9 +406,9 @@ int main(int argc, char* argv[])
       pfColl.push_back( getSlimmedPF( id, fForestPF.pfPt->at(ipf),fForestPF.pfEta->at(ipf),fForestPF.pfPhi->at(ipf),mass) );
     }
 
-    Float_t chrho[3]  = { getRho(pfColl,{1,2,3}), getRho(pfColl,{1,2,3},-1,1.4442), getRho(pfColl,{1,2,3},1.4442,2.4) };
-    Float_t phorho[3] = {getRho(pfColl,{4}),      getRho(pfColl,{4},-1,1.4442),     getRho(pfColl,{4},1.4442,2.4) };
-    Float_t nhrho[3]  = {getRho(pfColl,{5,6}),    getRho(pfColl,{5,6},-1,1.4442),   getRho(pfColl,{5,6},1.4442,2.4) };
+    Float_t chrho[3]  = { getRho(pfColl,{1,2,3}),  getRho(pfColl,{1,2,3},-1,1.4442), getRho(pfColl,{1,2,3},1.4442,2.4) };
+    Float_t phorho[3] = { getRho(pfColl,{4}),      getRho(pfColl,{4},-1,1.4442),     getRho(pfColl,{4},1.4442,2.4) };
+    Float_t nhrho[3]  = { getRho(pfColl,{5,6}),    getRho(pfColl,{5,6},-1,1.4442),   getRho(pfColl,{5,6},1.4442,2.4) };
 
     //monitor trigger and centrality
     float cenBin=0;
