@@ -787,7 +787,6 @@ int main(int argc, char* argv[])
     t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
 
     outTree->Fill();
-    break;
   }
 
   //save histos to file  
