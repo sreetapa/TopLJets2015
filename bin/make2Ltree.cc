@@ -61,6 +61,13 @@ std::vector<float> getRapidityMoments(std::vector<TLorentzVector> & coll){
   return mom;
 }
 
+int getRhoIndex(float eta){
+    if      (eta < -2.1 ) return 1;
+    else if (eta < -1.3 ) return 2;
+    else if (eta <  1.3 ) return 3;
+    else if (eta <  2.1 ) return 4;
+    else return 5;
+}
 
 
 // index, ntks in svtx, m svtx, csv
@@ -236,13 +243,14 @@ int main(int argc, char* argv[])
   TTree * outTree = new TTree("tree", "tree with 2lepton selection and combined collections");
 
   // event and trigger variables
-  Int_t  t_run, t_lumi, t_etrig, t_mtrig;
+  Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
   Float_t t_weight, t_cenbin;
   Float_t t_chrho[3], t_phorho[3], t_nhrho[3];
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
   outTree->Branch("event" , &t_event, "event/L");
+  outTree->Branch("isData", &t_isData, "isData/I");
 
   outTree->Branch("weight", &t_weight, "weight/F");
 
@@ -259,22 +267,28 @@ int main(int argc, char* argv[])
   outTree->Branch("mtrig" , &t_mtrig , "mtrig/I");
 
   // variables per lepton, including iso
-  Int_t t_nlep;
-  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_chrho, t_lep_nhrho, t_lep_phrho;
+  Int_t t_nlep, t_lep_ind1, t_lep_ind2;
+  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_chrho, t_lep_nhrho, t_lep_phrho, t_lep_isofull;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
-  outTree->Branch("nlep"      , &t_nlep      , "nlep/I"            );
-  outTree->Branch("lep_pt"    , &t_lep_pt);
-  outTree->Branch("lep_eta"   , &t_lep_eta);
-  outTree->Branch("lep_phi"   , &t_lep_phi);
-  outTree->Branch("lep_phiso" , &t_lep_phiso);
-  outTree->Branch("lep_chiso" , &t_lep_chiso);
-  outTree->Branch("lep_nhiso" , &t_lep_nhiso);
-  outTree->Branch("lep_rho"   , &t_lep_rho);
-  outTree->Branch("lep_phrho" , &t_lep_phrho);
-  outTree->Branch("lep_chrho" , &t_lep_chrho);
-  outTree->Branch("lep_nhrho" , &t_lep_nhrho);
-  outTree->Branch("lep_pdgId" , &t_lep_pdgId);
-  outTree->Branch("lep_charge", &t_lep_charge);
+  outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
+  outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
+  outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
+  outTree->Branch("lep_pt"     , &t_lep_pt);
+  outTree->Branch("lep_eta"    , &t_lep_eta);
+  outTree->Branch("lep_phi"    , &t_lep_phi);
+  outTree->Branch("lep_d0"    , &t_lep_d0);
+  outTree->Branch("lep_d0err"  , &t_lep_d0err);
+  outTree->Branch("lep_dz"     , &t_lep_dz);
+  outTree->Branch("lep_phiso"  , &t_lep_phiso);
+  outTree->Branch("lep_chiso"  , &t_lep_chiso);
+  outTree->Branch("lep_nhiso"  , &t_lep_nhiso);
+  outTree->Branch("lep_rho"    , &t_lep_rho);
+  outTree->Branch("lep_phrho"  , &t_lep_phrho);
+  outTree->Branch("lep_chrho"  , &t_lep_chrho);
+  outTree->Branch("lep_nhrho"  , &t_lep_nhrho);
+  outTree->Branch("lep_pdgId"  , &t_lep_pdgId);
+  outTree->Branch("lep_charge" , &t_lep_charge);
+  outTree->Branch("lep_isofull", &t_lep_isofull);
 
   // variables from dilepton system
   Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
@@ -380,6 +394,7 @@ int main(int argc, char* argv[])
     wgtSum += evWgt;    
     float plotWgt(evWgt);
 
+
     //first of all require a trigger
     int trig=etrig+mtrig;
     if(trig==0) continue;
@@ -447,6 +462,10 @@ int main(int argc, char* argv[])
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
+      l.isofull = -1.;
+      l.d0      = fForestMu.muD0   ->at(muIter);
+      l.d0err   = 0.; //fForestMu.muD0Err->at(muIter); // no d0err for muons!!!
+      l.dz      = fForestMu.muDz   ->at(muIter);
       l.origIdx = muIter;
       noIdMu.push_back(l);
 
@@ -516,6 +535,17 @@ int main(int argc, char* argv[])
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
+      if (!isMC){
+        int   tmp_rhoind  = getRhoIndex(p4.Eta());
+        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.6,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.6); 
+        l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
+      }
+      else {
+        l.isofull = -1.;
+      }
+      l.d0      = fForestEle.eleD0   ->at(eleIter);
+      l.d0err   = fForestEle.eleD0Err->at(eleIter);
+      l.dz      = fForestEle.eleDz   ->at(eleIter);
       l.origIdx=eleIter;
       noIdEle.push_back(l);
       
@@ -729,6 +759,9 @@ int main(int argc, char* argv[])
     t_lep_eta   .clear();
     t_lep_phi   .clear();
     t_lep_pdgId .clear();
+    t_lep_d0 .clear();
+    t_lep_d0err .clear();
+    t_lep_dz  .clear();
     t_lep_charge.clear();
     t_lep_chiso.clear();    
     t_lep_phiso.clear();
@@ -737,20 +770,29 @@ int main(int argc, char* argv[])
     t_lep_chrho.clear();    
     t_lep_phrho.clear();
     t_lep_nhrho.clear();
+    t_lep_isofull.clear();
     t_nlep = selLeptons.size();
+    t_lep_ind1 = -1;
+    t_lep_ind2 = -1;
     for (int ilep = 0; ilep < t_nlep; ++ilep){
-      t_lep_pt .push_back( selLeptons[ilep].p4.Pt()  );
-      t_lep_eta.push_back( selLeptons[ilep].p4.Eta() );
-      t_lep_phi.push_back( selLeptons[ilep].p4.Phi() );
-      t_lep_chiso.push_back( selLeptons[ilep].chiso );
-      t_lep_phiso.push_back( selLeptons[ilep].phoiso );
-      t_lep_nhiso.push_back( selLeptons[ilep].nhiso );
-      t_lep_rho.push_back( selLeptons[ilep].rho );
-      t_lep_chrho.push_back( selLeptons[ilep].chrho );
-      t_lep_phrho.push_back( selLeptons[ilep].phorho );
-      t_lep_nhrho.push_back( selLeptons[ilep].nhrho );
+      t_lep_pt    .push_back( selLeptons[ilep].p4.Pt()  );
+      t_lep_eta   .push_back( selLeptons[ilep].p4.Eta() );
+      t_lep_phi   .push_back( selLeptons[ilep].p4.Phi() );
+      t_lep_d0    .push_back( selLeptons[ilep].d0 );
+      t_lep_d0err .push_back( selLeptons[ilep].d0err);
+      t_lep_dz    .push_back( selLeptons[ilep].dz  );
+      t_lep_chiso .push_back( selLeptons[ilep].chiso );
+      t_lep_phiso .push_back( selLeptons[ilep].phoiso );
+      t_lep_nhiso .push_back( selLeptons[ilep].nhiso );
+      t_lep_rho   .push_back( selLeptons[ilep].rho );
+      t_lep_chrho .push_back( selLeptons[ilep].chrho );
+      t_lep_phrho .push_back( selLeptons[ilep].phorho );
+      t_lep_nhrho .push_back( selLeptons[ilep].nhrho );
       t_lep_pdgId .push_back( selLeptons[ilep].id );
       t_lep_charge.push_back( selLeptons[ilep].charge );
+      t_lep_isofull.push_back( selLeptons[ilep].isofull );
+      if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 < 0) t_lep_ind1 = ilep;
+      if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 > -0.5 && t_lep_ind2 < 0) t_lep_ind2 = ilep;
     }
 
     // fill the jets ordered by b-tag
@@ -785,6 +827,8 @@ int main(int argc, char* argv[])
     t_bdt         = reader->EvaluateMVA( methodName );
     t_bdt_rarity  = reader->GetRarity  ( methodName );
     t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
+
+    t_isData = !isMC;
 
     outTree->Fill();
   }
