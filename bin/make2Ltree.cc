@@ -71,7 +71,7 @@ int getRhoIndex(float eta){
 
 
 // index, ntks in svtx, m svtx, csv
-typedef std::tuple<int,int,float,float> BtagInfo_t;
+typedef std::tuple<int,int,float,float,TLorentzVector> BtagInfo_t;
 static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 {
   //int ntks_a(std::get<1>(a)), ntks_b(std::get<1>(b));
@@ -313,12 +313,18 @@ int main(int argc, char* argv[])
   // variables per bjet (jets ordered by csvv2)
   Int_t t_nbjet;
   std::vector<Float_t> t_bjet_pt, t_bjet_eta, t_bjet_phi, t_bjet_mass, t_bjet_csvv2;
+  std::vector<Float_t> t_bjet_matchpt, t_bjet_matcheta, t_bjet_matchphi, t_bjet_matchmass;
   outTree->Branch("nbjet"      , &t_nbjet      , "nbjet/I"            );
   outTree->Branch("bjet_pt"    , &t_bjet_pt    );
   outTree->Branch("bjet_eta"   , &t_bjet_eta   );
   outTree->Branch("bjet_phi"   , &t_bjet_phi   );
   outTree->Branch("bjet_mass"  , &t_bjet_mass  );
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
+
+  outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
+  outTree->Branch("bjet_geneta"   , &t_bjet_matcheta   );
+  outTree->Branch("bjet_genphi"   , &t_bjet_matchphi   );
+  outTree->Branch("bjet_genmass"  , &t_bjet_matchmass  );
 
   // constructed variables like ht and stuff
   Float_t t_ht, t_mht, t_apt, t_dphilll2;
@@ -338,7 +344,7 @@ int main(int argc, char* argv[])
   TMVA::Reader *readerFisher2 = new TMVA::Reader( "!Color:!Silent" );
 
   // make new variables because i'm too lazy to think right now
-  Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2, bdt_sumabseta, bdt_flavor;
+  Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2, bdt_sumabseta;//, bdt_flavor;
 
   // these must have the same name as in the training. and the same ordeeeeeeer
   // copy directly from the script that runs the training:
@@ -354,23 +360,22 @@ int main(int argc, char* argv[])
   reader->AddVariable("apt"        , &bdt_apt     );
   reader->AddVariable("llpt"       , &t_llpt      );
   reader->AddVariable("abs(lleta)" , &bdt_abslleta);
-  reader->AddVariable("dphi"       , &t_dphi      );
+  reader->AddVariable("abs(dphi)"  , &t_dphi      );
   reader->AddVariable("abs(lep_eta[0])+abs(lep_eta[1])", &bdt_sumabseta);
-  reader->AddVariable("abs(lep_pdgId[0]*lep_pdgId[1])" , &bdt_flavor);
 
   // for the fisher just take these two
   //dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
   //dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
   readerFisher2->AddVariable("llpt", &t_llpt);
-  readerFisher2->AddVariable("dphi", &t_dphi);
+  readerFisher2->AddVariable("abs(dphi)", &t_dphi);
 
   TString methodName       ("BDTG method");
   TString methodNameFisher2("Fisher method");
   // hard coded path for now ...
-  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_sevenVars_includeEMuZ/weights/TMVAClassification_BDTG.weights.xml");
+  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy/weights/TMVAClassification_BDTG.weights.xml");
   reader->BookMVA( methodName, weightFile);
 
-  TString weightFileFisher2("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_Fisher2_includeEMuZ/weights/TMVAClassification_Fisher.weights.xml");
+  TString weightFileFisher2("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy_fisher2/weights/TMVAClassification_Fisher.weights.xml");
   readerFisher2->BookMVA( methodNameFisher2, weightFileFisher2);
 
     
@@ -381,7 +386,7 @@ int main(int argc, char* argv[])
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-    
+
     lepTree_p->GetEntry(entry);
     pfCandTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);    
@@ -609,7 +614,7 @@ int main(int argc, char* argv[])
     t_lleta=ll.Eta();
     t_llphi=ll.Phi();
     t_llm=ll.M();
-    t_dphi=selLeptons[0].p4.DeltaPhi(selLeptons[1].p4);
+    t_dphi=TMath::Abs(selLeptons[0].p4.DeltaPhi(selLeptons[1].p4));
     t_deta=fabs(selLeptons[0].p4.Eta()-selLeptons[1].p4.Eta());
     t_sumeta=selLeptons[0].p4.Eta()+selLeptons[1].p4.Eta();
     int dilCode(selLeptons[0].id*selLeptons[1].id);
@@ -625,7 +630,7 @@ int main(int argc, char* argv[])
 
     //analyze jets
     std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
-    std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4;
+    std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4,nodr_pfJetsP4GenMatch;
     int npfjets(0),npfbjets(0); 
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
@@ -643,11 +648,23 @@ int main(int argc, char* argv[])
       if(fabs(jp4.Eta())>2.4) continue;
       bool isBTagged(csvVal>csvWP);      
 
-      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal) );
+      // simple matching to the closest jet in dR. require at least dR < 0.3
+      TLorentzVector matchjp4(0,0,0,0);
+      if (isMC){
+        //std::vector<TLorentzVector> matchedJets;
+        for (int genjetIter = 0; genjetIter < fForestJets.ngen; genjetIter++){
+          if (jetIter == fForestJets.genmatchindex[genjetIter]) {
+            matchjp4.SetPtEtaPhiM( fForestJets.genpt[genjetIter],fForestJets.geneta[genjetIter],fForestJets.genphi[genjetIter],fForestJets.genm[genjetIter]);
+          }
+        }
+        
+      }
+      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4) );
       nodr_pfJetsP4.push_back(jp4);
 
+
       if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) {
-        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal));
+        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4));
         pfJetsP4.push_back(jp4);
         npfjets++;
         npfbjets += isBTagged;
@@ -801,6 +818,10 @@ int main(int argc, char* argv[])
     t_bjet_phi  .clear();
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
+    t_bjet_matchpt  .clear();
+    t_bjet_matcheta .clear();
+    t_bjet_matchphi .clear();
+    t_bjet_matchmass.clear();
     t_nbjet = nodr_pfJetsIdx.size();
     for (int ij = 0; ij < t_nbjet; ij++) {
       int idx = std::get<0>(nodr_pfJetsIdx[ij]);
@@ -809,6 +830,11 @@ int main(int argc, char* argv[])
       t_bjet_phi  .push_back( nodr_pfJetsP4[idx].Phi() );
       t_bjet_mass .push_back( nodr_pfJetsP4[idx].M()   );
       t_bjet_csvv2.push_back( std::get<3>(nodr_pfJetsIdx[ij])   );
+
+      t_bjet_matchpt  .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Pt());
+      t_bjet_matcheta .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Eta());
+      t_bjet_matchphi .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Phi());
+      t_bjet_matchmass.push_back( std::get<4>(nodr_pfJetsIdx[ij]).M());
     }
 
 
@@ -821,7 +847,7 @@ int main(int argc, char* argv[])
     bdt_abslleta  = fabs(t_lleta);
     bdt_dphilll2  = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
     bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
-    bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
+    //bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
     t_apt         = bdt_apt;
     t_dphilll2    = bdt_dphilll2;
     t_bdt         = reader->EvaluateMVA( methodName );

@@ -14,9 +14,12 @@ r.TMVA.Tools.Instance()
 # does not work. Make sure you don't overwrite an
 # existing file.
 
-trainDY = False
+trainDY   = True
+doFisher2 = False
 
 training_string = 'dy' if trainDY else 'wjets'
+if doFisher2:
+    training_string+='_fisher2'
 
 output_fn  = 'training_{t}.root'.format(t=training_string)
 output_f   = r.TFile(output_fn,'RECREATE')
@@ -27,13 +30,17 @@ dataloader = r.TMVA.DataLoader('training_{t}/'.format(t=training_string))
 
 
 if trainDY:
-    dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'     , 'GeV' , 'F')
-    dataloader.AddVariable('apt'        , 'A_{pt}'           , ''    , 'F')
-    dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
-    dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
-    dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
-    dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
-    ## don't use flavor anymore dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'I')
+    if doFisher2:
+        dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+        dataloader.AddVariable('abs(dphi)'  , '|#Delta #phi|'    , 'rad' , 'F')
+    else:
+        dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'     , 'GeV' , 'F')
+        dataloader.AddVariable('apt'        , 'A_{pt}'           , ''    , 'F')
+        dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+        dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
+        dataloader.AddVariable('abs(dphi)'  , '|#Delta #phi|'    , 'rad' , 'F')
+        dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
+        ## don't use flavor anymore dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'I')
 else:
     dataloader.AddVariable('lep_pt[0]'                                                                      , 'p_{T}^{lep1}'          , 'GeV' , 'F')
     dataloader.AddVariable('lep_pt[1]'                                                                      , 'p_{T}^{lep2}'          , 'GeV' , 'F')
