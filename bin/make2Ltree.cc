@@ -543,7 +543,7 @@ int main(int argc, char* argv[])
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
       if (!isMC){
         int   tmp_rhoind  = getRhoIndex(p4.Eta());
-        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.6,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.6); 
+        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)-142.6,2) - 0.14 * (t_rho->at(tmp_rhoind)-142.6); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
