@@ -299,12 +299,14 @@ int main(int argc, char* argv[])
   // variables per bjet (jets ordered by csvv2)
   Int_t t_nbjet;
   std::vector<Float_t> t_bjet_pt, t_bjet_eta, t_bjet_phi, t_bjet_mass, t_bjet_csvv2;
+  std::vector<Bool_t> t_bjet_drSafe;
   outTree->Branch("nbjet"      , &t_nbjet      , "nbjet/I"            );
   outTree->Branch("bjet_pt"    , &t_bjet_pt    );
   outTree->Branch("bjet_eta"   , &t_bjet_eta   );
   outTree->Branch("bjet_phi"   , &t_bjet_phi   );
   outTree->Branch("bjet_mass"  , &t_bjet_mass  );
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
+  outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
 
   // constructed variables like ht and stuff
   Float_t t_ht, t_mht, t_apt, t_dphilll2;
@@ -594,6 +596,7 @@ int main(int argc, char* argv[])
     }
 
     //analyze jets
+    std::vector<bool> drSafe_pfJet;
     std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
     std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4;
     int npfjets(0),npfbjets(0); 
@@ -615,13 +618,17 @@ int main(int argc, char* argv[])
 
       nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal) );
       nodr_pfJetsP4.push_back(jp4);
+      bool isdrSafe(false);
 
-      if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) {
+      if(jp4.DeltaR(selLeptons[0].p4)>0.4 || jp4.DeltaR(selLeptons[1].p4)>0.4) {
         pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal));
         pfJetsP4.push_back(jp4);
         npfjets++;
         npfbjets += isBTagged;
+        isdrSafe=true;
       }
+
+      drSafe_pfJet.push_back(isdrSafe);      
     }
     std::sort(pfJetsIdx.begin(),       pfJetsIdx.end(),      orderByBtagInfo);
     std::sort(nodr_pfJetsIdx.begin(),  nodr_pfJetsIdx.end(), orderByBtagInfo);
@@ -759,6 +766,7 @@ int main(int argc, char* argv[])
     t_bjet_phi  .clear();
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
+    drSafe_pfJet.clear();
     t_nbjet = nodr_pfJetsIdx.size();
     for (int ij = 0; ij < t_nbjet; ij++) {
       int idx = std::get<0>(nodr_pfJetsIdx[ij]);
@@ -767,6 +775,7 @@ int main(int argc, char* argv[])
       t_bjet_phi  .push_back( nodr_pfJetsP4[idx].Phi() );
       t_bjet_mass .push_back( nodr_pfJetsP4[idx].M()   );
       t_bjet_csvv2.push_back( std::get<3>(nodr_pfJetsIdx[ij])   );
+      t_bjet_drSafe.push_back( drSafe_pfJet[idx] );
     }
 
 
