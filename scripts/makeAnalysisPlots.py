@@ -13,7 +13,7 @@ ABEAM=208
 SAMPLES=[
     ('WJetsToLNu_TuneCP5_5020GeV-amcatnloFXFX-pythia8',          'W',                    21159*(ABEAM**2)*LUMI,        17),         
     ('DYJetsToLL_M-10to50_TuneCP5_5020GeV-amcatnloFXFX-pythia8', 'Z/#gamma^{*}',         1506*(ABEAM**2)*LUMI,         "#fdc086"),         
-    ('DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8',   'Z/#gamma^{*}',         2010*(ABEAM**2)*LUMI,         "#fdc086"),         
+    ('DYJetsToLL_TuneCUETP8M1_5020GeV-amcatnloFXFX-pythia8',     'Z/#gamma^{*}',         2010*(ABEAM**2)*LUMI,         "#fdc086"),         
     ('TT_TuneCP5_5p02TeV-powheg-pythia8',                        't#bar{t}',             69*(ABEAM**2)*LUMI,           633),
     ('ST_tW_antitop_5f_NoFullyHadronicDecays_hdampDOWN_TuneCP5_5p02TeV-powheg-pythia8', 'tW', 3.04*(ABEAM**2)*LUMI,    "#7fc97f"),
     ('ST_tW_top_5f_NoFullyHadronicDecays_TuneCP5down_5p02TeV-powheg-pythia8',           'tW', 3.04*(ABEAM**2)*LUMI,    "#7fc97f"),
@@ -42,6 +42,8 @@ def getDataSummedUp(url,catList=['e','m'],pname='ratevsrun',tag='Skim',normByWgt
     #sum up plots from data
     histos={}
     for f in os.listdir(url):
+
+        if not '.root' in f : continue
 
         #open file
         if f.find(tag)!=0 : continue
@@ -189,7 +191,7 @@ def computeDYScaleFactors(url):
 
     cats=['zee','zmm','ee','mm','em']
     data=getDataSummedUp(url,cats,'mll','Skim',False)
-    dy=getDataSummedUp(url,cats,'mll','DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8',True)
+    dy=getDataSummedUp(url,cats,'mll','DYJetsToLL_TuneCUETP8M1_5020GeV-amcatnloFXFX-pythia8',True)
 
     nin={}
     nout={}
@@ -453,9 +455,9 @@ def checkAcceptance(url):
 
 
 url=sys.argv[1]
-#doEleIDPlots(url)
-doIsolationROCs(url,'ee')
-#doMuIDPlots(url)
+doEleIDPlots(url)
+#doIsolationROCs(url,'ee')
+doMuIDPlots(url)
 #doIsolationROCs(url,'mm')
 
 #showRateVsRun(url)
@@ -479,7 +481,6 @@ cats+=['mm0pfb','mmgeq1pfb','em0pfb','emgeq1pfb','ee0pfb','eegeq1pfb',]
 cats+=['mmhpur0pfb','mmhpurgeq1pfb','emhpur0pfb','emhpurgeq1pfb','eehpur0pfb','eehpurgeq1pfb',]
 for cat in cats:
     for d in ['mll','ptll','l1pt','l1eta','l2pt','l2eta']:                        
-        continue
         makeControlPlot(url,cat,d,1,True,dySF)
 
 fIn=ROOT.TFile.Open('plotter.root','RECREATE')
@@ -492,12 +493,10 @@ for cat in cats:
 
 for cat in cats:
     for d in ['npfjets','npfbjets','pf1jpt','pf1jeta','pf1jcsv','pf2jpt','pf2jeta','pf2jcsv','pfrapavg','pfraprms','pfrapmaxspan']:
-        continue
         makeControlPlot(url,cat,d,2,True,dySF)
 
 for cat in cats:
     for d in ['pfht','pfmht']:        
-        continue
         makeControlPlot(url,cat,d,2,True,dySF,rebin=2)
               
 
