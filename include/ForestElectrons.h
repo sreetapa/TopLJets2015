@@ -69,6 +69,7 @@ public :
        t->SetBranchAddress("eledPhiAtVtx", &eledPhiAtVtx);
        t->SetBranchAddress("eleHoverE", &eleHoverE);
        t->SetBranchAddress("eleD0", &eleD0);
+       t->SetBranchAddress("eleD0Err", &eleD0Err);
        t->SetBranchAddress("eleDz", &eleDz);
        t->SetBranchAddress("eleEoverPInv", &eleEoverPInv);
        t->SetBranchAddress("eleSCPhi", &eleSCPhi);

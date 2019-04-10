@@ -14,43 +14,65 @@ r.TMVA.Tools.Instance()
 # does not work. Make sure you don't overwrite an
 # existing file.
 
-output_fn  = 'training.root'
+trainDY   = True
+doFisher2 = False
+
+training_string = 'dy' if trainDY else 'wjets'
+if doFisher2:
+    training_string+='_fisher2'
+
+output_fn  = 'training_{t}.root'.format(t=training_string)
 output_f   = r.TFile(output_fn,'RECREATE')
  
 factory = r.TMVA.Factory('TMVAClassification', output_f, '!V:!Silent:Color:DrawProgressBar:Transformations=I;D;P;G,D:AnalysisType=Classification')
 
-dataloader = r.TMVA.DataLoader('trainingV2_sevenVars_includeEMuZ/')
+dataloader = r.TMVA.DataLoader('training_{t}/'.format(t=training_string))
 
-dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'     , 'GeV' , 'F')
-dataloader.AddVariable('apt'        , 'A_{pt}'           , ''    , 'F')
-dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
-dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
-dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
-dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
-dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'I')
 
-#forget about the folllowing
-#================================================================================================================
-#dataloader.AddVariable('dphilll2' , '|#Delta #phi_{ll,l2}|' , 'rad' , 'F')
-#dataloader.AddVariable('abs(rapidity(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1]))', '|y_{ll}|', ''  , 'F')
-##  dataloader.AddSpectator('llm'     , 'spec m_{ll}' , 'GeV' )#, 'F')
-#dataloader.AddVariable('abs(dphi_2(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1],1))', '|#Delta #phi_{ll,l1}|'  , 'rad'  , 'F')
-#dataloader.AddVariable('abs(sumeta)'    , '|#sum #eta_{i}|', ''  , 'F')
-#dataloader.AddVariable('max(abs(lep_eta[0]),abs(lep_eta[1]))'    , 'max(|#eta_{i}|)', ''  , 'F')
-#dataloader.AddVariable('deta'      , '#Delta #eta'  , ''  , 'F')
-#dataloader.AddVariable('lep_pt[1]'     , 'p_{T}^{lep2}' , 'GeV' , 'F')
-#================================================================================================================
+if trainDY:
+    if doFisher2:
+        dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+        dataloader.AddVariable('abs(dphi)'  , '|#Delta #phi|'    , 'rad' , 'F')
+    else:
+        dataloader.AddVariable('lep_pt[0]'  , 'p_{T}^{lep1}'     , 'GeV' , 'F')
+        dataloader.AddVariable('apt'        , 'A_{pt}'           , ''    , 'F')
+        dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
+        dataloader.AddVariable('abs(lleta)' , '|#eta^{ll}|'      , ''    , 'F')
+        dataloader.AddVariable('abs(dphi)'  , '|#Delta #phi|'    , 'rad' , 'F')
+        dataloader.AddVariable('abs(lep_eta[0])+abs(lep_eta[1])' , '#sum |#eta_{i}|', ''    , 'F')
+        ## don't use flavor anymore dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'  , 'flavor', ''    , 'I')
+else:
+    dataloader.AddVariable('lep_pt[0]'                                                                      , 'p_{T}^{lep1}'          , 'GeV' , 'F')
+    dataloader.AddVariable('lep_pt[1]'                                                                      , 'p_{T}^{lep2}'          , 'GeV' , 'F')
+    dataloader.AddVariable('llpt'                                                                           , 'p_{T}^{ll}'            , 'GeV' , 'F')
+    dataloader.AddVariable('abs(lleta)'                                                                     , '|#eta^{ll}|'           , ''    , 'F')
+    dataloader.AddVariable('abs(dphi)'                                                                      , '|#Delta #phi|'         , 'rad' , 'F')
+    dataloader.AddVariable('abs(sumeta)'                                                                    , '|#sum #eta_{i}|'       , ''    , 'F')
+    dataloader.AddVariable('max(abs(lep_eta[0]),abs(lep_eta[1]))'                                           , 'max(|#eta_{i}|)'       , ''    , 'F')
+    ## dataloader.AddVariable('deta'                                                                           , '#Delta #eta'           , ''    , 'F')
+    ## dataloader.AddVariable('abs(rapidity(lep_pt[0],lep_eta[0],lep_phi[0],lep_pt[1],lep_eta[1],lep_phi[1]))' , '|y_{ll}|'              , ''    , 'F')
+    ## dataloader.AddVariable('llm'                                                                            , 'm_{ll}'                , 'GeV' , 'F')
+    ## dataloader.AddVariable('apt'                                                                            , 'A_{pt}'                , ''    , 'F')
+    ## don't use flavor for wjets either dataloader.AddVariable('abs(lep_pdgId[0]*lep_pdgId[1])'            , ' flavor'                , ' '    , ' I')
+    ## dataloader.AddVariable('dphilll2'                                                                       , ' |#Delta #phi_{ll,l2}|' , ' rad' , ' F')
+    #================================================================================================================
  
 ## add weights for signal and background
 dataloader.SetBackgroundWeightExpression('weight/abs(weight)')
 dataloader.SetSignalWeightExpression('weight/abs(weight)')
 
+basedir = '/eos/cms/store/cmst3/group/hintt/PbPb2018_skim4Apr/'
+
 ## get background tree and friends etc
-bkg_tfile = r.TFile('../plots/DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8.root')
+if trainDY:
+    bkg_tfile = r.TFile(basedir+'/DYJetsToLL_MLL-50_TuneCP5_5020GeV-amcatnloFXFX-pythia8/treeProducerHIN/tree.root')
+else:
+    bkg_tfile = r.TFile(basedir+'/WJetsToLNu_TuneCP5_5020GeV-amcatnloFXFX-pythia8/treeProducerHIN/tree.root')
+
 bkg_tree = bkg_tfile.Get('tree')
 
 ## get signal tree and friends etc
-sig_tfile = r.TFile('../plots/TT_TuneCP5_5p02TeV-powheg-pythia8.root')
+sig_tfile = r.TFile(basedir+'/TT_TuneCP5_5p02TeV-powheg-pythia8/treeProducerHIN/tree.root')
 sig_tree = sig_tfile.Get('tree')
 
 dataloader.AddSignalTree    (sig_tree)
@@ -58,7 +80,13 @@ dataloader.AddBackgroundTree(bkg_tree)
 
 # cuts defining the signal and background sample
 
-cutstring = 'abs(lep_pdgId[0]*lep_pdgId[1]) == 143 || llm > 106. || llm < 76.'
+if trainDY:
+    ## for ttbar vs DY use all events that are outside the Z peak and only same flavor
+    cutstring  = 'abs(lep_pdgId[0]*lep_pdgId[1]) != 143 && ( llm > 106. || llm < 76. )'
+else:
+    ## for ttbar vs wjets use all events that are cross flavor
+    cutstring  = '1.'#abs(lep_pdgId[0]*lep_pdgId[1]) == 143'
+
 sig_cutstring = cutstring
 bkg_cutstring = cutstring
 sigCut = r.TCut(sig_cutstring)
@@ -131,6 +159,7 @@ lh = factory.BookMethod( dataloader, r.TMVA.Types.kLikelihood, 'LikelihoodD',
 ##       '!H:!V:FitMethod=MC:EffSel:SampleSize=200000:VarProp=FSmart:VarTransform=Decorrelate')
 
 doTraining = True
+
 if doTraining:
     ## do the training
     factory.TrainAllMethods()

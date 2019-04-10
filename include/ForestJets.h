@@ -122,6 +122,12 @@ public :
     t->SetBranchAddress("mudr", mudr);
     t->SetBranchAddress("muptrel", muptrel);
     t->SetBranchAddress("muchg", muchg);
+    t->SetBranchAddress("ngen"          , &ngen         );
+    t->SetBranchAddress("genpt"         , genpt        );
+    t->SetBranchAddress("geneta"        , geneta       );
+    t->SetBranchAddress("genphi"        , genphi       );
+    t->SetBranchAddress("genm"          , genm         );
+    t->SetBranchAddress("genmatchindex" , genmatchindex);
 
   }
   ~ForestJets() {}
@@ -222,6 +228,12 @@ public :
    Float_t         mudr[85];   //[nref]
    Float_t         muptrel[85];   //[nref]
    Int_t           muchg[85];   //[nref]
+   Int_t           ngen;
+   Float_t         genpt[85];
+   Float_t         geneta[85];
+   Float_t         genphi[85];
+   Float_t         genm[85];
+   Int_t           genmatchindex[85];
 };
 
 #endif

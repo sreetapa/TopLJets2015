@@ -61,10 +61,17 @@ std::vector<float> getRapidityMoments(std::vector<TLorentzVector> & coll){
   return mom;
 }
 
+int getRhoIndex(float eta){
+    if      (eta < -2.1 ) return 1;
+    else if (eta < -1.3 ) return 2;
+    else if (eta <  1.3 ) return 3;
+    else if (eta <  2.1 ) return 4;
+    else return 5;
+}
 
 
 // index, ntks in svtx, m svtx, csv
-typedef std::tuple<int,int,float,float> BtagInfo_t;
+typedef std::tuple<int,int,float,float,TLorentzVector> BtagInfo_t;
 static bool orderByBtagInfo(const BtagInfo_t &a, const BtagInfo_t &b)
 {
   //int ntks_a(std::get<1>(a)), ntks_b(std::get<1>(b));
@@ -236,13 +243,14 @@ int main(int argc, char* argv[])
   TTree * outTree = new TTree("tree", "tree with 2lepton selection and combined collections");
 
   // event and trigger variables
-  Int_t  t_run, t_lumi, t_etrig, t_mtrig;
+  Int_t  t_run, t_lumi, t_etrig, t_mtrig, t_isData;
   Long_t t_event;
   Float_t t_weight, t_cenbin;
   Float_t t_chrho[3], t_phorho[3], t_nhrho[3];
   outTree->Branch("run"   , &t_run  , "run/I");
   outTree->Branch("lumi"  , &t_lumi , "lumi/I");
   outTree->Branch("event" , &t_event, "event/L");
+  outTree->Branch("isData", &t_isData, "isData/I");
 
   outTree->Branch("weight", &t_weight, "weight/F");
 
@@ -259,22 +267,28 @@ int main(int argc, char* argv[])
   outTree->Branch("mtrig" , &t_mtrig , "mtrig/I");
 
   // variables per lepton, including iso
-  Int_t t_nlep;
-  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_chrho, t_lep_nhrho, t_lep_phrho;
+  Int_t t_nlep, t_lep_ind1, t_lep_ind2;
+  std::vector<Float_t> t_lep_pt, t_lep_eta, t_lep_phi, t_lep_d0, t_lep_dz, t_lep_d0err, t_lep_phiso, t_lep_chiso, t_lep_nhiso, t_lep_rho, t_lep_chrho, t_lep_nhrho, t_lep_phrho, t_lep_isofull;
   std::vector<Int_t  > t_lep_pdgId, t_lep_charge;
-  outTree->Branch("nlep"      , &t_nlep      , "nlep/I"            );
-  outTree->Branch("lep_pt"    , &t_lep_pt);
-  outTree->Branch("lep_eta"   , &t_lep_eta);
-  outTree->Branch("lep_phi"   , &t_lep_phi);
-  outTree->Branch("lep_phiso" , &t_lep_phiso);
-  outTree->Branch("lep_chiso" , &t_lep_chiso);
-  outTree->Branch("lep_nhiso" , &t_lep_nhiso);
-  outTree->Branch("lep_rho"   , &t_lep_rho);
-  outTree->Branch("lep_phrho" , &t_lep_phrho);
-  outTree->Branch("lep_chrho" , &t_lep_chrho);
-  outTree->Branch("lep_nhrho" , &t_lep_nhrho);
-  outTree->Branch("lep_pdgId" , &t_lep_pdgId);
-  outTree->Branch("lep_charge", &t_lep_charge);
+  outTree->Branch("nlep"       , &t_nlep      , "nlep/I"            );
+  outTree->Branch("lep_ind1"   , &t_lep_ind1  , "lep_ind1/I");
+  outTree->Branch("lep_ind2"   , &t_lep_ind2  , "lep_ind2/I");
+  outTree->Branch("lep_pt"     , &t_lep_pt);
+  outTree->Branch("lep_eta"    , &t_lep_eta);
+  outTree->Branch("lep_phi"    , &t_lep_phi);
+  outTree->Branch("lep_d0"    , &t_lep_d0);
+  outTree->Branch("lep_d0err"  , &t_lep_d0err);
+  outTree->Branch("lep_dz"     , &t_lep_dz);
+  outTree->Branch("lep_phiso"  , &t_lep_phiso);
+  outTree->Branch("lep_chiso"  , &t_lep_chiso);
+  outTree->Branch("lep_nhiso"  , &t_lep_nhiso);
+  outTree->Branch("lep_rho"    , &t_lep_rho);
+  outTree->Branch("lep_phrho"  , &t_lep_phrho);
+  outTree->Branch("lep_chrho"  , &t_lep_chrho);
+  outTree->Branch("lep_nhrho"  , &t_lep_nhrho);
+  outTree->Branch("lep_pdgId"  , &t_lep_pdgId);
+  outTree->Branch("lep_charge" , &t_lep_charge);
+  outTree->Branch("lep_isofull", &t_lep_isofull);
 
   // variables from dilepton system
   Float_t t_llpt, t_lleta, t_llphi, t_llm, t_dphi, t_deta, t_sumeta;
@@ -308,6 +322,11 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
   outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
 
+  outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
+  outTree->Branch("bjet_geneta"   , &t_bjet_matcheta   );
+  outTree->Branch("bjet_genphi"   , &t_bjet_matchphi   );
+  outTree->Branch("bjet_genmass"  , &t_bjet_matchmass  );
+
   // constructed variables like ht and stuff
   Float_t t_ht, t_mht, t_apt, t_dphilll2;
   outTree->Branch("ht"     , &t_ht     , "ht/F");
@@ -326,7 +345,7 @@ int main(int argc, char* argv[])
   TMVA::Reader *readerFisher2 = new TMVA::Reader( "!Color:!Silent" );
 
   // make new variables because i'm too lazy to think right now
-  Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2, bdt_sumabseta, bdt_flavor;
+  Float_t bdt_l1pt, bdt_apt, bdt_abslleta, bdt_dphilll2, bdt_sumabseta;//, bdt_flavor;
 
   // these must have the same name as in the training. and the same ordeeeeeeer
   // copy directly from the script that runs the training:
@@ -342,23 +361,22 @@ int main(int argc, char* argv[])
   reader->AddVariable("apt"        , &bdt_apt     );
   reader->AddVariable("llpt"       , &t_llpt      );
   reader->AddVariable("abs(lleta)" , &bdt_abslleta);
-  reader->AddVariable("dphi"       , &t_dphi      );
+  reader->AddVariable("abs(dphi)"  , &t_dphi      );
   reader->AddVariable("abs(lep_eta[0])+abs(lep_eta[1])", &bdt_sumabseta);
-  reader->AddVariable("abs(lep_pdgId[0]*lep_pdgId[1])" , &bdt_flavor);
 
   // for the fisher just take these two
   //dataloader.AddVariable('llpt'       , 'p_{T}^{ll}'       , 'GeV' , 'F')
   //dataloader.AddVariable('dphi'       , '|#Delta #phi|'    , 'rad' , 'F')
   readerFisher2->AddVariable("llpt", &t_llpt);
-  readerFisher2->AddVariable("dphi", &t_dphi);
+  readerFisher2->AddVariable("abs(dphi)", &t_dphi);
 
   TString methodName       ("BDTG method");
   TString methodNameFisher2("Fisher method");
   // hard coded path for now ...
-  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_sevenVars_includeEMuZ/weights/TMVAClassification_BDTG.weights.xml");
+  TString weightFile("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy/weights/TMVAClassification_BDTG.weights.xml");
   reader->BookMVA( methodName, weightFile);
 
-  TString weightFileFisher2("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_10_3_1/src/HeavyIonsAnalysis/topskim/scripts/trainingV2_Fisher2_includeEMuZ/weights/TMVAClassification_Fisher.weights.xml");
+  TString weightFileFisher2("/afs/cern.ch/work/m/mdunser/public/cmssw/heavyIons/CMSSW_9_4_6_patch1/src/HeavyIonsAnalysis/topskim/scripts/training_dy_fisher2/weights/TMVAClassification_Fisher.weights.xml");
   readerFisher2->BookMVA( methodNameFisher2, weightFileFisher2);
 
     
@@ -369,7 +387,7 @@ int main(int argc, char* argv[])
   for(int entry = 0; entry < nEntries; entry++){
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
-    
+
     lepTree_p->GetEntry(entry);
     pfCandTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);    
@@ -381,6 +399,7 @@ int main(int argc, char* argv[])
     if(isMC && fForestTree.ttbar_w->size()) { evWgt=fForestTree.ttbar_w->at(0); }
     wgtSum += evWgt;    
     float plotWgt(evWgt);
+
 
     //first of all require a trigger
     int trig=etrig+mtrig;
@@ -449,6 +468,10 @@ int main(int argc, char* argv[])
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
+      l.isofull = -1.;
+      l.d0      = fForestMu.muD0   ->at(muIter);
+      l.d0err   = 0.; //fForestMu.muD0Err->at(muIter); // no d0err for muons!!!
+      l.dz      = fForestMu.muDz   ->at(muIter);
       l.origIdx = muIter;
       noIdMu.push_back(l);
 
@@ -518,6 +541,17 @@ int main(int argc, char* argv[])
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
+      if (!isMC){
+        int   tmp_rhoind  = getRhoIndex(p4.Eta());
+        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.6,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.6); 
+        l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
+      }
+      else {
+        l.isofull = -1.;
+      }
+      l.d0      = fForestEle.eleD0   ->at(eleIter);
+      l.d0err   = fForestEle.eleD0Err->at(eleIter);
+      l.dz      = fForestEle.eleDz   ->at(eleIter);
       l.origIdx=eleIter;
       noIdEle.push_back(l);
       
@@ -581,7 +615,7 @@ int main(int argc, char* argv[])
     t_lleta=ll.Eta();
     t_llphi=ll.Phi();
     t_llm=ll.M();
-    t_dphi=selLeptons[0].p4.DeltaPhi(selLeptons[1].p4);
+    t_dphi=TMath::Abs(selLeptons[0].p4.DeltaPhi(selLeptons[1].p4));
     t_deta=fabs(selLeptons[0].p4.Eta()-selLeptons[1].p4.Eta());
     t_sumeta=selLeptons[0].p4.Eta()+selLeptons[1].p4.Eta();
     int dilCode(selLeptons[0].id*selLeptons[1].id);
@@ -598,7 +632,7 @@ int main(int argc, char* argv[])
     //analyze jets
     std::vector<bool> drSafe_pfJet;
     std::vector<BtagInfo_t> pfJetsIdx,nodr_pfJetsIdx;
-    std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4;
+    std::vector<TLorentzVector> pfJetsP4,nodr_pfJetsP4,nodr_pfJetsP4GenMatch;
     int npfjets(0),npfbjets(0); 
     for(int jetIter = 0; jetIter < fForestJets.nref; jetIter++){
 
@@ -616,12 +650,24 @@ int main(int argc, char* argv[])
       if(fabs(jp4.Eta())>2.4) continue;
       bool isBTagged(csvVal>csvWP);      
 
-      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal) );
+      // simple matching to the closest jet in dR. require at least dR < 0.3
+      TLorentzVector matchjp4(0,0,0,0);
+      if (isMC){
+        //std::vector<TLorentzVector> matchedJets;
+        for (int genjetIter = 0; genjetIter < fForestJets.ngen; genjetIter++){
+          if (jetIter == fForestJets.genmatchindex[genjetIter]) {
+            matchjp4.SetPtEtaPhiM( fForestJets.genpt[genjetIter],fForestJets.geneta[genjetIter],fForestJets.genphi[genjetIter],fForestJets.genm[genjetIter]);
+          }
+        }
+        
+      }
+      nodr_pfJetsIdx.push_back( std::make_tuple(nodr_pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4) );
       nodr_pfJetsP4.push_back(jp4);
       bool isdrSafe(false);
 
-      if(jp4.DeltaR(selLeptons[0].p4)>0.4 || jp4.DeltaR(selLeptons[1].p4)>0.4) {
-        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal));
+      //cross clean wrt to leptons
+      if(jp4.DeltaR(selLeptons[0].p4)<0.4 || jp4.DeltaR(selLeptons[1].p4)<0.4) {
+        pfJetsIdx.push_back(std::make_tuple(pfJetsP4.size(),nsvtxTk,msvtx,csvVal,matchjp4));
         pfJetsP4.push_back(jp4);
         npfjets++;
         npfbjets += isBTagged;
@@ -736,6 +782,9 @@ int main(int argc, char* argv[])
     t_lep_eta   .clear();
     t_lep_phi   .clear();
     t_lep_pdgId .clear();
+    t_lep_d0 .clear();
+    t_lep_d0err .clear();
+    t_lep_dz  .clear();
     t_lep_charge.clear();
     t_lep_chiso.clear();    
     t_lep_phiso.clear();
@@ -744,20 +793,29 @@ int main(int argc, char* argv[])
     t_lep_chrho.clear();    
     t_lep_phrho.clear();
     t_lep_nhrho.clear();
+    t_lep_isofull.clear();
     t_nlep = selLeptons.size();
+    t_lep_ind1 = -1;
+    t_lep_ind2 = -1;
     for (int ilep = 0; ilep < t_nlep; ++ilep){
-      t_lep_pt .push_back( selLeptons[ilep].p4.Pt()  );
-      t_lep_eta.push_back( selLeptons[ilep].p4.Eta() );
-      t_lep_phi.push_back( selLeptons[ilep].p4.Phi() );
-      t_lep_chiso.push_back( selLeptons[ilep].chiso );
-      t_lep_phiso.push_back( selLeptons[ilep].phoiso );
-      t_lep_nhiso.push_back( selLeptons[ilep].nhiso );
-      t_lep_rho.push_back( selLeptons[ilep].rho );
-      t_lep_chrho.push_back( selLeptons[ilep].chrho );
-      t_lep_phrho.push_back( selLeptons[ilep].phorho );
-      t_lep_nhrho.push_back( selLeptons[ilep].nhrho );
+      t_lep_pt    .push_back( selLeptons[ilep].p4.Pt()  );
+      t_lep_eta   .push_back( selLeptons[ilep].p4.Eta() );
+      t_lep_phi   .push_back( selLeptons[ilep].p4.Phi() );
+      t_lep_d0    .push_back( selLeptons[ilep].d0 );
+      t_lep_d0err .push_back( selLeptons[ilep].d0err);
+      t_lep_dz    .push_back( selLeptons[ilep].dz  );
+      t_lep_chiso .push_back( selLeptons[ilep].chiso );
+      t_lep_phiso .push_back( selLeptons[ilep].phoiso );
+      t_lep_nhiso .push_back( selLeptons[ilep].nhiso );
+      t_lep_rho   .push_back( selLeptons[ilep].rho );
+      t_lep_chrho .push_back( selLeptons[ilep].chrho );
+      t_lep_phrho .push_back( selLeptons[ilep].phorho );
+      t_lep_nhrho .push_back( selLeptons[ilep].nhrho );
       t_lep_pdgId .push_back( selLeptons[ilep].id );
       t_lep_charge.push_back( selLeptons[ilep].charge );
+      t_lep_isofull.push_back( selLeptons[ilep].isofull );
+      if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 < 0) t_lep_ind1 = ilep;
+      if(selLeptons[ilep].isofull < 0.16 && t_lep_ind1 > -0.5 && t_lep_ind2 < 0) t_lep_ind2 = ilep;
     }
 
     // fill the jets ordered by b-tag
@@ -767,6 +825,10 @@ int main(int argc, char* argv[])
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
     drSafe_pfJet.clear();
+    t_bjet_matchpt  .clear();
+    t_bjet_matcheta .clear();
+    t_bjet_matchphi .clear();
+    t_bjet_matchmass.clear();
     t_nbjet = nodr_pfJetsIdx.size();
     for (int ij = 0; ij < t_nbjet; ij++) {
       int idx = std::get<0>(nodr_pfJetsIdx[ij]);
@@ -776,6 +838,10 @@ int main(int argc, char* argv[])
       t_bjet_mass .push_back( nodr_pfJetsP4[idx].M()   );
       t_bjet_csvv2.push_back( std::get<3>(nodr_pfJetsIdx[ij])   );
       t_bjet_drSafe.push_back( drSafe_pfJet[idx] );
+      t_bjet_matchpt  .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Pt());
+      t_bjet_matcheta .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Eta());
+      t_bjet_matchphi .push_back( std::get<4>(nodr_pfJetsIdx[ij]).Phi());
+      t_bjet_matchmass.push_back( std::get<4>(nodr_pfJetsIdx[ij]).M());
     }
 
 
@@ -788,12 +854,14 @@ int main(int argc, char* argv[])
     bdt_abslleta  = fabs(t_lleta);
     bdt_dphilll2  = fabs(dphi_2(t_lep_pt[0],t_lep_eta[0],t_lep_phi[0],t_lep_pt[1],t_lep_eta[1],t_lep_phi[1],2)); // this function is in functions.cc in scripts/
     bdt_sumabseta = fabs(t_lep_eta[0])+fabs(t_lep_eta[1]);
-    bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
+    //bdt_flavor    = abs(t_lep_pdgId[0]*t_lep_pdgId[1]); //abs should be fine here, it's an int
     t_apt         = bdt_apt;
     t_dphilll2    = bdt_dphilll2;
     t_bdt         = reader->EvaluateMVA( methodName );
     t_bdt_rarity  = reader->GetRarity  ( methodName );
     t_fisher2     = readerFisher2->EvaluateMVA( methodNameFisher2 );
+
+    t_isData = !isMC;
 
     outTree->Fill();
   }
