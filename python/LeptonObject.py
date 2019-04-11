@@ -28,11 +28,12 @@ class Lepton:
     def getIsolation(self):
         if not 'rho' in self.rho : return -1
         avgRho=142.6
-        ue=0.0011*((rhoVal-avgRho)**2)-0.14*(rho-avgRho)
-        return (self.chiso+self.nhiso+self.phiso-ue)/p4.Pt()
+        rhoVal=self.rho['rho']
+        ue=0.0011*((rhoVal-avgRho)**2)-0.14*(rhoVal-avgRho)
+        return (self.chiso+self.nhiso+self.phiso-ue)/self.p4.Pt()
 
     def isIsolated(self):
-        return abs(pdgId)==13 or (getIsolation()<0.16)
+        return abs(self.pdgId)==13 or (self.getIsolation()<0.16)
 
 class Dilepton:
 
@@ -43,8 +44,8 @@ class Dilepton:
         self.l2=l2 if l1.p4.Pt()>l2.p4.Pt() else l1
         self.p4=self.l1.p4+self.l2.p4
         self.flavour=abs(l1.pdgId*l2.pdgId)
-        self.isOF=OF
-        self.isSS=iSS
+        self.isOF=isOF
+        self.isSS=isSS
         self.isZ=isZ
         self.isIso=isIso
         self.isMixed=isMixed
