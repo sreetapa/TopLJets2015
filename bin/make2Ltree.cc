@@ -322,6 +322,7 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
   outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
 
+  std::vector<Float_t> t_bjet_matchpt, t_bjet_matcheta, t_bjet_matchphi, t_bjet_matchmass;
   outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
   outTree->Branch("bjet_geneta"   , &t_bjet_matcheta   );
   outTree->Branch("bjet_genphi"   , &t_bjet_matchphi   );
@@ -468,7 +469,14 @@ int main(int argc, char* argv[])
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
-      l.isofull = -1.;
+      if (!isMC){
+        int   tmp_rhoind  = getRhoIndex(p4.Eta());
+        float tmp_rho_par = 0.0013 * TMath::Power(t_rho->at(tmp_rhoind)+15.83,2) + 0.29 * (t_rho->at(tmp_rhoind)+15.83); 
+        l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
+      }
+      else {
+        l.isofull = -1.;
+      }
       l.d0      = fForestMu.muD0   ->at(muIter);
       l.d0err   = 0.; //fForestMu.muD0Err->at(muIter); // no d0err for muons!!!
       l.dz      = fForestMu.muDz   ->at(muIter);
@@ -525,7 +533,7 @@ int main(int argc, char* argv[])
       p4.SetPtEtaPhiM(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),0.000511);
 
       //apply ad-hoc shift for endcap electrons if needed
-      if(!isPP && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1])
+      if(!isMC && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1])
         p4 *=eeScaleShift;         
 
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
@@ -543,7 +551,7 @@ int main(int argc, char* argv[])
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
       if (!isMC){
         int   tmp_rhoind  = getRhoIndex(p4.Eta());
-        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)-142.6,2) - 0.14 * (t_rho->at(tmp_rhoind)-142.6); 
+        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.4,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.4); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
