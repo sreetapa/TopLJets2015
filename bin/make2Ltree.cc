@@ -313,6 +313,7 @@ int main(int argc, char* argv[])
   // variables per bjet (jets ordered by csvv2)
   Int_t t_nbjet;
   std::vector<Float_t> t_bjet_pt, t_bjet_eta, t_bjet_phi, t_bjet_mass, t_bjet_csvv2;
+  std::vector<Float_t> t_bjet_matchpt,t_bjet_matcheta,t_bjet_matchphi,t_bjet_matchmass;
   std::vector<Bool_t> t_bjet_drSafe;
   outTree->Branch("nbjet"      , &t_nbjet      , "nbjet/I"            );
   outTree->Branch("bjet_pt"    , &t_bjet_pt    );
@@ -321,7 +322,6 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_mass"  , &t_bjet_mass  );
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
   outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
-
   outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
   outTree->Branch("bjet_geneta"   , &t_bjet_matcheta   );
   outTree->Branch("bjet_genphi"   , &t_bjet_matchphi   );

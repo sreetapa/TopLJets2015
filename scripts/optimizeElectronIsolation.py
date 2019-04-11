@@ -2,6 +2,7 @@ import ROOT
 import sys
 import os
 import numpy as np
+from HeavyIonsAnalysis.topskim.LeptonObject import *
 
 rhoTitle={'lep_chrho':'#rho_{ch}(l)',
           'lep_phrho':'#rho_{#gamma}(l)',
@@ -27,60 +28,6 @@ isoTitle={'iso':'Total isolation',
           'isoleppartcomp'    : "#Sigma_{k}[I_{k}-UE(#rho_{k}^{lepton})]",
           }
 
-class Lepton:
-    def __init__(self,pdgId,pt,eta,phi,m,charge):
-        self.pdgId=pdgId
-        self.p4=ROOT.TLorentzVector(0,0,0,0)
-        self.p4.SetPtEtaPhiM(pt,eta,phi,m)
-        self.isEE = True if abs(eta)>1.4442 else False
-        self.charge=charge
-        self.chiso=0
-        self.nhiso=0
-        self.phiso=0
-        self.iso=0
-        self.rho={}
-    def addIsoComponents(self,chiso,nhiso,phiso):
-        self.chiso=chiso
-        self.nhiso=nhiso
-        self.phiso=phiso
-        self.iso=chiso+nhiso+phiso
-    def addRho(self,key,val):
-        self.rho[key]=val
-
-
-def getElectrons(t):
-    """ get all the electrons in the event """
-
-    eleColl=[]
-    for il in range(t.nlep):
-        if abs(t.lep_pdgId[il])!=11: continue
-        eleColl.append( Lepton(t.lep_pdgId[il],
-                               t.lep_pt[il],
-                               t.lep_eta[il],
-                               t.lep_phi[il],
-                               0.511e-3,
-                               t.lep_charge[il]) )
-        eleColl[-1].addIsoComponents(t.lep_chiso[il],t.lep_nhiso[il],t.lep_phiso[il])
-
-        eta=t.lep_eta[il]
-        
-
-        #this is hardcoded, as in the rho tree producer...
-        eta_idx=None
-        if eta>-3.0 and eta<=-2.1 : eta_idx=1
-        if eta>-2.1 and eta<=-1.3 : eta_idx=2
-        if eta>-1.3 and eta<=1.3  : eta_idx=3
-        if eta>1.3  and eta<=2.1  : eta_idx=4
-        if eta>2.1  and eta<=3.0  : eta_idx=5
-  
-        for key in ['lep_chrho','lep_nhrho','lep_phrho']:
-            eleColl[-1].addRho(key,getattr(t,key)[il])
-        for key in ['chrho','nhrho','phorho']:
-            eleColl[-1].addRho(key,getattr(t,key)[0])
-            eleColl[-1].addRho(key+'_restr',getattr(t,key)[2 if abs(eta)<1.4442 else 1])
-        eleColl[-1].addRho('rho',t.rho[eta_idx] if eta_idx else 0)
-            
-    return eleColl
 
 def dileptonFinder(eleColl):
 
