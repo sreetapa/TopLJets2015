@@ -832,7 +832,7 @@ int main(int argc, char* argv[])
     t_bjet_phi  .clear();
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
-    drSafe_pfJet.clear();
+    t_bjet_drSafe.clear();
     t_bjet_matchpt  .clear();
     t_bjet_matcheta .clear();
     t_bjet_matchphi .clear();
