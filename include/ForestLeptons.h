@@ -1,18 +1,15 @@
-#ifndef ForestElectrons_h
-#define ForestElectrons_h
+#ifndef ForestLeptons_h
+#define ForestLeptons_h
 
 #include <iostream>
 #include <vector>
-#include "TBranch.h"
 
-class ForestElectrons {
+class ForestLeptons {
 public :
- ForestElectrons(TChain *t) : eleCharge(0),
+ ForestLeptons(TChain *t) 
+   : 
     eleChargeConsistent(0),
     eleEn(0),
-    eleD0(0),
-    eleDz(0),
-    eleD0Err(0),
     eleDzErr(0),
     eleTrkPt(0),
     eleTrkEta(0),
@@ -54,12 +51,35 @@ public :
     elePFChIso04(0),
     elePFPhoIso04(0),
     elePFNeuIso04(0),
-    eleBC1E(0),
-    eleBC1Eta(0),
-    eleBC2E(0),
-    eleBC2Eta(0)
+    eleD0(0),
+    eleCharge(0),
+    eleD0Err(0),
+    eleBC2Eta(0),
+    muPt(0),
+    muEta(0),
+    muPhi(0),
+    muCharge(0),
+    muType(0),
+    muIsGood(0),
+    muD0(0),
+    muDz(0),
+    muChi2NDF(0),
+    muInnerD0(0),
+    muInnerDz(0),
+    muTrkLayers(0),
+    muPixelLayers(0),
+    muPixelHits(0),
+    muMuonHits(0),
+    muTrkQuality(0),
+    muStations(0),
+    muIsoTrk(0),
+    muPFChIso(0),
+    muPFPhoIso(0),
+    muPFNeuIso(0),
+    muPFPUIso(0)
      {
-       t->SetBranchStatus("ele*", 1);    
+
+       t->SetBranchStatus("ele*", 1);
        t->SetBranchAddress("elePt", &elePt);
        t->SetBranchAddress("elePhi", &elePhi);
        t->SetBranchAddress("eleEta", &eleEta);
@@ -79,20 +99,44 @@ public :
        t->SetBranchAddress("eleSCEtaWidth", &eleSCEtaWidth);
        t->SetBranchAddress("eleSCPhiWidth", &eleSCPhiWidth);
        t->SetBranchAddress("eleMissHits", &eleMissHits);
+       t->SetBranchAddress("elePFChIso", &elePFChIso);
+       t->SetBranchAddress("elePFPhoIso", &elePFPhoIso);
+       t->SetBranchAddress("elePFNeuIso", &elePFNeuIso);
        t->SetBranchAddress("elePFChIso03", &elePFChIso03);
        t->SetBranchAddress("elePFPhoIso03", &elePFPhoIso03);
        t->SetBranchAddress("elePFNeuIso03", &elePFNeuIso03);
+       t->SetBranchStatus("mu*", 1);
+       t->SetBranchAddress("muPt", &muPt);
+       t->SetBranchAddress("muPhi", &muPhi);
+       t->SetBranchAddress("muEta", &muEta);
+       t->SetBranchAddress("muCharge", &muCharge);
+       t->SetBranchAddress("muType", &muType);
+       t->SetBranchAddress("muIsGood", &muIsGood);
+       t->SetBranchAddress("muD0", &muD0);
+       t->SetBranchAddress("muDz", &muDz);
+       t->SetBranchAddress("muChi2NDF", &muChi2NDF);
+       t->SetBranchAddress("muInnerD0", &muInnerD0);
+       t->SetBranchAddress("muInnerDz", &muInnerDz);
+       t->SetBranchAddress("muMuonHits", &muMuonHits);
+       t->SetBranchAddress("muStations", &muStations);
+       t->SetBranchAddress("muTrkLayers", &muTrkLayers);
+       t->SetBranchAddress("muPixelHits", &muPixelHits);
+       t->SetBranchAddress("muMuonHits", &muMuonHits);
+       t->SetBranchAddress("muTrkQuality", &muTrkQuality);
+       t->SetBranchAddress("muStations", &muStations);
+       t->SetBranchAddress("muIsoTrk", &muIsoTrk);
+       t->SetBranchAddress("muPFChIso", &muPFChIso);
+       t->SetBranchAddress("muPFPhoIso", &muPFPhoIso);
+       t->SetBranchAddress("muPFNeuIso", &muPFNeuIso);
+       t->SetBranchAddress("muPFPUIso", &muPFPUIso);
+
      };
-   ~ForestElectrons(){};
+   ~ForestLeptons(){};
 
    // RecoElectron info
    Int_t           nEle;
-   std::vector<Int_t>     *eleCharge;
    std::vector<Int_t>     *eleChargeConsistent;
    std::vector<Float_t>   *eleEn;
-   std::vector<Float_t>   *eleD0;
-   std::vector<Float_t>   *eleDz;
-   std::vector<Float_t>   *eleD0Err;
    std::vector<Float_t>   *eleDzErr;
    std::vector<Float_t>   *eleTrkPt;
    std::vector<Float_t>   *eleTrkEta;
@@ -134,9 +178,34 @@ public :
    std::vector<Float_t>   *elePFChIso04;
    std::vector<Float_t>   *elePFPhoIso04;
    std::vector<Float_t>   *elePFNeuIso04;
-   std::vector<Float_t>   *eleBC1E;
-   std::vector<Float_t>   *eleBC1Eta;
-   std::vector<Float_t>   *eleBC2E;
+   std::vector<Float_t>   *eleD0;
+   std::vector<Int_t>     *eleCharge;
+   std::vector<Float_t>   *eleD0Err;
+   std::vector<Float_t>   *eleDz;
    std::vector<Float_t>   *eleBC2Eta;
+
+   // RecoMuon info
+   std::vector<Float_t>   *muPt;
+   std::vector<Float_t>   *muEta;
+   std::vector<Float_t>   *muPhi;
+   std::vector<Int_t>     *muCharge;
+   std::vector<Int_t>     *muType;
+   std::vector<Int_t>     *muIsGood;
+   std::vector<Float_t>   *muD0;
+   std::vector<Float_t>   *muDz;
+   std::vector<Float_t>   *muChi2NDF;
+   std::vector<Float_t>   *muInnerD0;
+   std::vector<Float_t>   *muInnerDz;
+   std::vector<Int_t>     *muTrkLayers;
+   std::vector<Int_t>     *muPixelLayers;
+   std::vector<Int_t>     *muPixelHits;
+   std::vector<Int_t>     *muMuonHits;
+   std::vector<Int_t>     *muTrkQuality;
+   std::vector<Int_t>     *muStations;
+   std::vector<Float_t>   *muIsoTrk;
+   std::vector<Float_t>   *muPFChIso;
+   std::vector<Float_t>   *muPFPhoIso;
+   std::vector<Float_t>   *muPFNeuIso;
+   std::vector<Float_t>   *muPFPUIso;
 };
 #endif
