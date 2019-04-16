@@ -10,8 +10,8 @@
 #include <vector>
 
 #include "HeavyIonsAnalysis/topskim/include/ForestHiTree.h"
-#include "HeavyIonsAnalysis/topskim/include/ForestElectrons.h"
-#include "HeavyIonsAnalysis/topskim/include/ForestMuons.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestLeptons.h"
+#include "HeavyIonsAnalysis/topskim/include/ForestSkim.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestPFCands.h"
 #include "HeavyIonsAnalysis/topskim/include/ForestJets.h"
 #include "HeavyIonsAnalysis/topskim/include/LumiRun.h"
@@ -184,11 +184,24 @@ int main(int argc, char* argv[])
     ht.addHist("pf"+ppf+"jcsv",        new TH1F("pf"+ppf+"jcsv",     ";CSVv2;Events",25,0,1));
   }
 
+  //Get Tree info
+  char* read = new char[100];
+  TChain *hiInfoTree_p  = new TChain("HiForest/HiForestInfo");
+  hiInfoTree_p->Add(inURL);
+  TBranch *branch = hiInfoTree_p->GetBranch("GlobalTag");
+  branch->SetAddress((void*)read);
+  hiInfoTree_p->GetEntry(0);
+  string GT(read, 0, 100);
+
+  //Get global event filters 
+  TChain *globalTree_p     = new TChain("skimanalysis/HltTree");
+  globalTree_p->Add(inURL);
+  ForestSkim fForestSkim(globalTree_p);
+
   //configure leptons
-  TChain *lepTree_p     = new TChain(isPP ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
+  TChain *lepTree_p     = new TChain(isPP && GT.find("75X_mcRun2")!=string::npos ? "ggHiNtuplizer/EventTree" : "ggHiNtuplizerGED/EventTree");
   lepTree_p->Add(inURL);
-  ForestMuons fForestMu(lepTree_p);  
-  ForestElectrons fForestEle(lepTree_p);
+  ForestLeptons fForestLep(lepTree_p);
 
   //configure PF cands
   TChain *pfCandTree_p  = new TChain("pfcandAnalyzer/pfTree");
@@ -212,10 +225,12 @@ int main(int argc, char* argv[])
   if(isPP){
     TString muTrig("HLT_HIL3Mu20_v1");
     if( !hltTree_p->FindBranch(muTrig) ) muTrig="HLT_HIL3Mu15ForPPRef_v1";
+    if( GT.find("75X_mcRun2")!=string::npos ) muTrig="HLT_HIL2Mu15ForPPRef_v1";
     hltTree_p->SetBranchStatus(muTrig,1);
     hltTree_p->SetBranchAddress(muTrig,&mtrig);
     TString eTrig("HLT_HIEle20_WPLoose_Gsf_v1");
     if( !hltTree_p->FindBranch(eTrig) ) eTrig="HLT_HISinglePhoton20_Eta3p1ForPPRef_v1";
+    if( GT.find("75X_mcRun2")!=string::npos ) eTrig="HLT_HISinglePhoton40_Eta3p1ForPPRef_v1";
     hltTree_p->SetBranchStatus(eTrig,1);
     hltTree_p->SetBranchAddress(eTrig,&etrig);
     cout << "Using " << muTrig << " " << eTrig << " as MC triggers" << endl;
@@ -313,7 +328,6 @@ int main(int argc, char* argv[])
   // variables per bjet (jets ordered by csvv2)
   Int_t t_nbjet;
   std::vector<Float_t> t_bjet_pt, t_bjet_eta, t_bjet_phi, t_bjet_mass, t_bjet_csvv2;
-  std::vector<Float_t> t_bjet_matchpt,t_bjet_matcheta,t_bjet_matchphi,t_bjet_matchmass;
   std::vector<Bool_t> t_bjet_drSafe;
   outTree->Branch("nbjet"      , &t_nbjet      , "nbjet/I"            );
   outTree->Branch("bjet_pt"    , &t_bjet_pt    );
@@ -322,6 +336,8 @@ int main(int argc, char* argv[])
   outTree->Branch("bjet_mass"  , &t_bjet_mass  );
   outTree->Branch("bjet_csvv2" , &t_bjet_csvv2 );
   outTree->Branch("bjet_drSafe" , &t_bjet_drSafe );
+
+  std::vector<Float_t> t_bjet_matchpt, t_bjet_matcheta, t_bjet_matchphi, t_bjet_matchmass;
   outTree->Branch("bjet_genpt"    , &t_bjet_matchpt    );
   outTree->Branch("bjet_geneta"   , &t_bjet_matcheta   );
   outTree->Branch("bjet_genphi"   , &t_bjet_matchphi   );
@@ -388,6 +404,7 @@ int main(int argc, char* argv[])
     
     if(entry%entryDiv == 0) std::cout << "Entry # " << entry << "/" << nEntries << std::endl;
 
+    globalTree_p->GetEntry(entry);
     lepTree_p->GetEntry(entry);
     pfCandTree_p->GetEntry(entry);
     jetTree_p->GetEntry(entry);    
@@ -412,11 +429,15 @@ int main(int argc, char* argv[])
       if(etrig==0) continue;
     }
 
-    //FIXME: WHAT SHOULD WE DO HERE ?
+    //FIXME FOR 2018: WHAT SHOULD WE DO HERE ?
     //apply global filters
-    //if(!isPP){
-    //  if(TMath::Abs(fForestTree.vz) > 15) continue;
-    // }
+    if(!isMC && GT.find("75X")!=string::npos){
+      if(TMath::Abs(fForestTree.vz) > 15) continue;
+      if(!fForestSkim.phfCoincFilter) continue;
+      if(!fForestSkim.HBHENoiseFilterResult) continue;
+      if(!fForestSkim.pcollisionEventSelection) continue;
+      if(!fForestSkim.pprimaryVertexFilter) continue;
+    }
 
     //build jets from different PF candidate collections   
     SlimmedPFCollection_t pfColl;
@@ -451,43 +472,50 @@ int main(int argc, char* argv[])
 
     //select muons
     std::vector<LeptonSummary> noIdMu;
-    for(unsigned int muIter = 0; muIter < fForestMu.muPt->size(); ++muIter) {
+    for(unsigned int muIter = 0; muIter < fForestLep.muPt->size(); ++muIter) {
 
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
-      p4.SetPtEtaPhiM(fForestMu.muPt->at(muIter),fForestMu.muEta->at(muIter),fForestMu.muPhi->at(muIter),0.1057);
+      p4.SetPtEtaPhiM(fForestLep.muPt->at(muIter),fForestLep.muEta->at(muIter),fForestLep.muPhi->at(muIter),0.1057);
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(p4.Pt() < lepPtCut) continue;
 
       LeptonSummary l(13,p4);
-      l.charge  = fForestMu.muCharge->at(muIter);
-      l.chiso   = fForestMu.muPFChIso->at(muIter);
-      l.nhiso   = fForestMu.muPFNeuIso->at(muIter);
-      l.phoiso  = fForestMu.muPFPhoIso->at(muIter);
+      l.charge  = fForestLep.muCharge->at(muIter);
+      l.chiso   = fForestLep.muPFChIso->at(muIter);
+      l.nhiso   = fForestLep.muPFNeuIso->at(muIter);
+      l.phoiso  = fForestLep.muPFPhoIso->at(muIter);
       l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
-      l.isofull = -1.;
-      l.d0      = fForestMu.muD0   ->at(muIter);
-      l.d0err   = 0.; //fForestMu.muD0Err->at(muIter); // no d0err for muons!!!
-      l.dz      = fForestMu.muDz   ->at(muIter);
+      if (!isMC && GT.find("75X")==string::npos){
+        int   tmp_rhoind  = getRhoIndex(p4.Eta());
+        float tmp_rho_par = 0.0013 * TMath::Power(t_rho->at(tmp_rhoind)+15.83,2) + 0.29 * (t_rho->at(tmp_rhoind)+15.83); 
+        l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
+      }
+      else {
+        l.isofull = -1.;
+	}
+      l.d0      = fForestLep.muD0   ->at(muIter);
+      l.d0err   = 0.; //fForestLep.muD0Err->at(muIter); // no d0err for muons!!!
+      l.dz      = fForestLep.muDz   ->at(muIter);
       l.origIdx = muIter;
       noIdMu.push_back(l);
 
       //id (Tight muon requirements)
-      int type=fForestMu.muType->at(muIter);
+      int type=fForestLep.muType->at(muIter);
       bool isGlobal( ((type>>1)&0x1) );
       if(!isGlobal) continue;
       bool isPF( ((type>>5)&0x1) );
       if(!isPF) continue;
-      bool isGlobalMuonPromptTight(fForestMu.muChi2NDF->at(muIter)<10. && fForestMu.muMuonHits->at(muIter)>0);
+      bool isGlobalMuonPromptTight(fForestLep.muChi2NDF->at(muIter)<10. && fForestLep.muMuonHits->at(muIter)>0);
       if(!isGlobalMuonPromptTight) continue;
-      if(fForestMu.muStations->at(muIter)<=1) continue;
-      if(fForestMu.muTrkLayers->at(muIter) <= 5) continue;
-      if(fForestMu.muPixelHits->at(muIter) == 0) continue;
-      if(TMath::Abs(fForestMu.muInnerD0->at(muIter)) >=0.2 ) continue;
-      if(TMath::Abs(fForestMu.muInnerDz->at(muIter)) >=0.5) continue;
+      if(fForestLep.muStations->at(muIter)<=1) continue;
+      if(fForestLep.muTrkLayers->at(muIter) <= 5) continue;
+      if(fForestLep.muPixelHits->at(muIter) == 0) continue;
+      if(TMath::Abs(fForestLep.muInnerD0->at(muIter)) >=0.2 ) continue;
+      if(TMath::Abs(fForestLep.muInnerDz->at(muIter)) >=0.5) continue;
 
       //selected a good muon
       selLeptons.push_back(l);
@@ -504,54 +532,61 @@ int main(int argc, char* argv[])
         TString cat("zmmctrl");
         if(charge>0) cat="ss"+cat;
         for(size_t i=0; i<2; i++) {
-          ht.fill("mmusta",    fForestMu.muStations->at(midx[i]),            plotWgt,cat);
-          ht.fill("mtrklay",   fForestMu.muTrkLayers->at(midx[i]),           plotWgt,cat);
-          ht.fill("mchi2ndf",  fForestMu.muChi2NDF->at(midx[i]),             plotWgt,cat);
-          ht.fill("mmuhits",   fForestMu.muMuonHits->at(midx[i]),            plotWgt,cat);
-          ht.fill("mpxhits",   fForestMu.muPixelHits->at(midx[i]),           plotWgt,cat);
-          ht.fill("md0",       TMath::Abs(fForestMu.muInnerD0->at(midx[i])), plotWgt,cat);
-          ht.fill("mdz",       TMath::Abs(fForestMu.muInnerDz->at(midx[i])), plotWgt,cat);          
+          ht.fill("mmusta",    fForestLep.muStations->at(midx[i]),            plotWgt,cat);
+          ht.fill("mtrklay",   fForestLep.muTrkLayers->at(midx[i]),           plotWgt,cat);
+          ht.fill("mchi2ndf",  fForestLep.muChi2NDF->at(midx[i]),             plotWgt,cat);
+          ht.fill("mmuhits",   fForestLep.muMuonHits->at(midx[i]),            plotWgt,cat);
+          ht.fill("mpxhits",   fForestLep.muPixelHits->at(midx[i]),           plotWgt,cat);
+          ht.fill("md0",       TMath::Abs(fForestLep.muInnerD0->at(midx[i])), plotWgt,cat);
+          ht.fill("mdz",       TMath::Abs(fForestLep.muInnerDz->at(midx[i])), plotWgt,cat);          
         }
       }
     }
-       
+
     //select electrons
     //cf. https://twiki.cern.ch/twiki/pub/CMS/HiHighPt2019/HIN_electrons2018_followUp.pdf
     std::vector<LeptonSummary> noIdEle;
-    for(unsigned int eleIter = 0; eleIter < fForestEle.elePt->size(); ++eleIter) {
-      
+    for(unsigned int eleIter = 0; eleIter < fForestLep.elePt->size(); ++eleIter) {
+
       //kinematics selection
       TLorentzVector p4(0,0,0,0);
-      p4.SetPtEtaPhiM(fForestEle.elePt->at(eleIter),fForestEle.eleEta->at(eleIter),fForestEle.elePhi->at(eleIter),0.000511);
+      p4.SetPtEtaPhiM(fForestLep.elePt->at(eleIter),fForestLep.eleEta->at(eleIter),fForestLep.elePhi->at(eleIter),0.000511);
 
-      //apply ad-hoc shift for endcap electrons if needed
-      if(!isPP && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1])
+      //apply ad-hoc shift for endcap electrons if needed, i.e., PromptReco'18
+      if(!isMC && fForestTree.run<=firstEEScaleShiftRun && TMath::Abs(p4.Eta())>=barrelEndcapEta[1] && GT.find("fixEcalADCToGeV")==string::npos && GT.find("75X")==string::npos)
         p4 *=eeScaleShift;         
+
 
       if(TMath::Abs(p4.Eta()) > lepEtaCut) continue;
       if(TMath::Abs(p4.Eta()) > barrelEndcapEta[0] && TMath::Abs(p4.Eta()) < barrelEndcapEta[1] ) continue;
       if(p4.Pt() < lepPtCut) continue;	      
       
       LeptonSummary l(11,p4);
-      l.charge  = fForestEle.eleCharge->at(eleIter);
-      l.chiso   = fForestEle.elePFChIso03->at(eleIter);
-      l.nhiso   = fForestEle.elePFNeuIso03->at(eleIter);
-      l.phoiso  = fForestEle.elePFPhoIso03->at(eleIter);
+      l.charge  = fForestLep.eleCharge->at(eleIter);
+      if(GT.find("75X_mcRun2")==string::npos) {
+	l.chiso   = fForestLep.elePFChIso03->at(eleIter);
+	l.nhiso   = fForestLep.elePFNeuIso03->at(eleIter);
+	l.phoiso  = fForestLep.elePFPhoIso03->at(eleIter);
+      }else{
+        l.chiso   = fForestLep.elePFChIso->at(eleIter);
+        l.nhiso   = fForestLep.elePFNeuIso->at(eleIter);
+        l.phoiso  = fForestLep.elePFPhoIso->at(eleIter);
+      }
       l.rho     = getRho(pfColl,{1,2,3,4,5,6},p4.Eta()-0.5,p4.Eta()+0.5);
       l.chrho   = getRho(pfColl,{1,2,3},      p4.Eta()-0.5,p4.Eta()+0.5);
       l.phorho  = getRho(pfColl,{4},          p4.Eta()-0.5,p4.Eta()+0.5);
       l.nhrho   = getRho(pfColl,{5,6},        p4.Eta()-0.5,p4.Eta()+0.5);
-      if (!isMC){
+      if (!isMC && GT.find("75X")==string::npos){
         int   tmp_rhoind  = getRhoIndex(p4.Eta());
-        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)-142.6,2) - 0.14 * (t_rho->at(tmp_rhoind)-142.6); 
+        float tmp_rho_par = 0.0011 * TMath::Power(t_rho->at(tmp_rhoind)+142.4,2) - 0.14 * (t_rho->at(tmp_rhoind)+142.4); 
         l.isofull = (l.chiso+l.nhiso+l.phoiso - tmp_rho_par)/p4.Pt();
       }
       else {
         l.isofull = -1.;
-      }
-      l.d0      = fForestEle.eleD0   ->at(eleIter);
-      l.d0err   = fForestEle.eleD0Err->at(eleIter);
-      l.dz      = fForestEle.eleDz   ->at(eleIter);
+	}
+      l.d0      = fForestLep.eleD0   ->at(eleIter);
+      l.d0err   = fForestLep.eleD0Err->at(eleIter);
+      l.dz      = fForestLep.eleDz   ->at(eleIter);
       l.origIdx=eleIter;
       noIdEle.push_back(l);
       
@@ -559,22 +594,22 @@ int main(int argc, char* argv[])
       //see https://indico.cern.ch/event/811374/contributions/3382348/attachments/1823016/2983559/HIN_electrons2018_centrDep.pdf
       bool isEB(TMath::Abs(p4.Eta()) <= barrelEndcapEta[0]);      
       if(isCentralEvent){
-        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.012 : 0.048)) continue;
-        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.006 : 0.008)) continue;
-        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.027 : 0.067)) continue;
-        if(fForestEle.eleHoverE->at(eleIter)               >=(isEB ? 0.150 : 0.150)) continue;
-        if(fForestEle.eleEoverPInv->at(eleIter)            >=(isEB ? 0.040 : 0.250)) continue;
-        if(TMath::Abs(fForestEle.eleD0->at(eleIter))       >=(isEB ? 0.011 : 0.083)) continue;
-        if(TMath::Abs(fForestEle.eleDz->at(eleIter))       >=(isEB ? 0.037 : 0.028)) continue;
+        if(fForestLep.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.012 : 0.048)) continue;
+        if(TMath::Abs(fForestLep.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.006 : 0.008)) continue;
+        if(TMath::Abs(fForestLep.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.027 : 0.067)) continue;
+        if(fForestLep.eleHoverE->at(eleIter)               >=(isEB ? 0.150 : 0.150)) continue;
+        if(fForestLep.eleEoverPInv->at(eleIter)            >=(isEB ? 0.040 : 0.250)) continue;
+        if(TMath::Abs(fForestLep.eleD0->at(eleIter))       >=(isEB ? 0.011 : 0.083)) continue;
+        if(TMath::Abs(fForestLep.eleDz->at(eleIter))       >=(isEB ? 0.037 : 0.028)) continue;
       }
       else {
-        if(fForestEle.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.010 : 0.041)) continue;
-        if(TMath::Abs(fForestEle.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.007 : 0.011)) continue;
-        if(TMath::Abs(fForestEle.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.021 : 0.026)) continue;
-        if(fForestEle.eleHoverE->at(eleIter)               >=(isEB ? 0.130 : 0.150)) continue;
-        if(fForestEle.eleEoverPInv->at(eleIter)            >=(isEB ? 0.020 : 0.330)) continue;
-        if(TMath::Abs(fForestEle.eleD0->at(eleIter))       >=(isEB ? 0.008 : 0.015)) continue;
-        if(TMath::Abs(fForestEle.eleDz->at(eleIter))       >=(isEB ? 0.020 : 0.045)) continue;
+        if(fForestLep.eleSigmaIEtaIEta->at(eleIter)        >=(isEB ? 0.010 : 0.041)) continue;
+        if(TMath::Abs(fForestLep.eledEtaAtVtx->at(eleIter))>=(isEB ? 0.007 : 0.011)) continue;
+        if(TMath::Abs(fForestLep.eledPhiAtVtx->at(eleIter))>=(isEB ? 0.021 : 0.026)) continue;
+        if(fForestLep.eleHoverE->at(eleIter)               >=(isEB ? 0.130 : 0.150)) continue;
+        if(fForestLep.eleEoverPInv->at(eleIter)            >=(isEB ? 0.020 : 0.330)) continue;
+        if(TMath::Abs(fForestLep.eleD0->at(eleIter))       >=(isEB ? 0.008 : 0.015)) continue;
+        if(TMath::Abs(fForestLep.eleDz->at(eleIter))       >=(isEB ? 0.020 : 0.045)) continue;
       }
 
       //id'ed electron
@@ -593,13 +628,13 @@ int main(int argc, char* argv[])
         for(size_t i=0; i<2; i++) {
           TString cat(basecat);
           cat += (fabs(p4[i].Eta())>=barrelEndcapEta[1] ? "EE" : "EB");
-          ht.fill("esihih",  fForestEle.eleSigmaIEtaIEta->at(eidx[i]),         plotWgt,cat);
-          ht.fill("edetavtx", TMath::Abs(fForestEle.eledEtaAtVtx->at(eidx[i])), plotWgt,cat);
-          ht.fill("edphivtx", TMath::Abs(fForestEle.eledPhiAtVtx->at(eidx[i])), plotWgt,cat);
-          ht.fill("ehoe",     fForestEle.eleHoverE->at(eidx[i]),                plotWgt,cat);
-          ht.fill("eempinv",  fForestEle.eleEoverPInv->at(eidx[i]),             plotWgt,cat);
-          ht.fill("ed0",      TMath::Abs(fForestEle.eleD0->at(eidx[i])),        plotWgt,cat);
-          ht.fill("edz",      TMath::Abs(fForestEle.eleDz->at(eidx[i])),        plotWgt,cat);          
+          ht.fill("esihih",  fForestLep.eleSigmaIEtaIEta->at(eidx[i]),         plotWgt,cat);
+          ht.fill("edetavtx", TMath::Abs(fForestLep.eledEtaAtVtx->at(eidx[i])), plotWgt,cat);
+          ht.fill("edphivtx", TMath::Abs(fForestLep.eledPhiAtVtx->at(eidx[i])), plotWgt,cat);
+          ht.fill("ehoe",     fForestLep.eleHoverE->at(eidx[i]),                plotWgt,cat);
+          ht.fill("eempinv",  fForestLep.eleEoverPInv->at(eidx[i]),             plotWgt,cat);
+          ht.fill("ed0",      TMath::Abs(fForestLep.eleD0->at(eidx[i])),        plotWgt,cat);
+          ht.fill("edz",      TMath::Abs(fForestLep.eleDz->at(eidx[i])),        plotWgt,cat);          
         }
       }
     }
@@ -824,7 +859,7 @@ int main(int argc, char* argv[])
     t_bjet_phi  .clear();
     t_bjet_mass .clear();
     t_bjet_csvv2.clear();
-    drSafe_pfJet.clear();
+    t_bjet_drSafe.clear();
     t_bjet_matchpt  .clear();
     t_bjet_matcheta .clear();
     t_bjet_matchphi .clear();
