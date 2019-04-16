@@ -89,7 +89,7 @@ def getLeptons(t,pdgIdColl=[13,11]):
         if eta>1.3  and eta<=2.1  : eta_idx=4
         if eta>2.1  and eta<=3.0  : eta_idx=5
   
-        for key in ['lep_chrho','lep_nhrho','lep_phrho']:
+        for key in ['lep_rho','lep_chrho','lep_nhrho','lep_phrho']:
             lepColl[-1].addRho(key,getattr(t,key)[il])
         for key in ['chrho','nhrho','phorho']:
             lepColl[-1].addRho(key,getattr(t,key)[0])
