@@ -25,7 +25,7 @@ cd -
 
 #This package
 cd $CMSSW_BASE/src
-git clone https://github.com/pfs/TopLJets2015.git
+git clone https://github.com/pfs/TopLJets2015.git -b 106_protonreco
 cd TopLJets2015
 
 scram b -j 8
