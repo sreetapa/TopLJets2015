@@ -22,8 +22,6 @@
 
 #include "TMath.h"
 
-#include "TopLJets2015/CTPPSAnalysisTools/interface/LHCConditionsFactory.h"
-
 
 using namespace std;
 
@@ -59,11 +57,7 @@ void RunExclusiveZX(const TString in_fname,
     }
   }
   */
-
-  ctpps::LHCConditionsFactory lhc_conds;
-  lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_tillTS2.csv", CMSSW_BASE));
-  lhc_conds.feedConditions(Form("%s/src/TopLJets2015/CTPPSAnalysisTools/data/2017/xangle_afterTS2.csv", CMSSW_BASE));
-  
+    
   MiniEvent_t ev;
 
   //PREPARE OUTPUT
@@ -741,11 +735,6 @@ void RunExclusiveZX(const TString in_fname,
         }
         
         try{
-          const edm::EventID ev_id( ev.run, ev.lumi, ev.event );        
-          const ctpps::conditions_t lhc_cond = lhc_conds.get( ev_id );
-          beamXangle = std::round(lhc_cond.crossing_angle);
-          outVars["lumiDeliv"] = lhc_cond.luminosity.delivered;
-          outVars["lumiReco"]  = lhc_cond.luminosity.recorded;
           ht.fill("beamXangle", beamXangle, plotwgts, selCat);
           
           if(beamXangle==120 || beamXangle==130 || beamXangle==140 || beamXangle==150) {

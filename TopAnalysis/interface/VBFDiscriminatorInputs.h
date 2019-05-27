@@ -186,10 +186,10 @@ namespace vbf{
       EventShapeVariables esv(inputVectors);
       isotropy    = esv.isotropy();
       circularity = esv.circularity();
-      sphericity  = esv.sphericity(1.);
-      aplanarity  = esv.aplanarity(1.);
-      C           = esv.C(1.);
-      D           = esv.D(1.);
+      sphericity  = esv.sphericity();
+      aplanarity  = esv.aplanarity();
+      C           = esv.C();
+      D           = esv.D();
     }
   };
 

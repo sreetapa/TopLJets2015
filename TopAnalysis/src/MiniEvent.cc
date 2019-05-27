@@ -8,6 +8,8 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("run",       &ev.run,      "run/i");
   t->Branch("event",     &ev.event,    "event/l");
   t->Branch("lumi",      &ev.lumi,     "lumi/i");
+  t->Branch("beamXangle",  &ev.beamXangle,   "beamXangle/F");
+  t->Branch("instLumi",    &ev.instLumi,     "instLumi/F");
 
   //generator level information
   t->Branch("g_pu",      &ev.g_pu,     "g_pu/I");
@@ -178,12 +180,16 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("nfwdtrk",         &ev.nfwdtrk,          "nfwdtrk/S");
   t->Branch("fwdtrk_pot",       ev.fwdtrk_pot,       "fwdtrk_pot[nfwdtrk]/S");
   t->Branch("fwdtrk_method",    ev.fwdtrk_method,    "fwdtrk_method[nfwdtrk]/S");
-  t->Branch("fwdtrk_ex",        ev.fwdtrk_ex,        "fwdtrk_ex[nfwdtrk]/F");
-  t->Branch("fwdtrk_ey",        ev.fwdtrk_ey,        "fwdtrk_ey[nfwdtrk]/F");
-  t->Branch("fwdtrk_ez",        ev.fwdtrk_ez,        "fwdtrk_ez[nfwdtrk]/F");
-  t->Branch("fwdtrk_y",         ev.fwdtrk_y,         "fwdtrk_y[nfwdtrk]/F");
+  t->Branch("fwdtrk_thetax",    ev.fwdtrk_thetax,    "fwdtrk_thetax[nfwdtrk]/F");
+  t->Branch("fwdtrk_thetay",    ev.fwdtrk_thetay,    "fwdtrk_thetay[nfwdtrk]/F");
+  t->Branch("fwdtrk_vx",        ev.fwdtrk_vx,        "fwdtrk_vx[nfwdtrk]/F");
+  t->Branch("fwdtrk_vy",        ev.fwdtrk_vy,        "fwdtrk_vy[nfwdtrk]/F");
+  t->Branch("fwdtrk_vz",        ev.fwdtrk_vz,        "fwdtrk_vz[nfwdtrk]/F");
+  t->Branch("fwdtrk_time",      ev.fwdtrk_time,      "fwdtrk_time[nfwdtrk]/F");
+  t->Branch("fwdtrk_timeError", ev.fwdtrk_timeError, "fwdtrk_timeError[nfwdtrk]/F");
   t->Branch("fwdtrk_chisqnorm", ev.fwdtrk_chisqnorm, "fwdtrk_chisqnorm[nfwdtrk]/F");
   t->Branch("fwdtrk_xi",        ev.fwdtrk_xi,        "fwdtrk_xi[nfwdtrk]/F");
+  t->Branch("fwdtrk_xiError",   ev.fwdtrk_xiError,   "fwdtrk_xiError[nfwdtrk]/F");
   t->Branch("fwdtrk_t",         ev.fwdtrk_t,         "fwdtrk_t[nfwdtrk]/F");
 
   t->Branch("nrawmu", &ev.nrawmu, "nrawmu/I");
@@ -201,6 +207,8 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("run",       &ev.run);
   t->SetBranchAddress("event",     &ev.event);
   t->SetBranchAddress("lumi",      &ev.lumi);
+  t->SetBranchAddress("beamXangle",  &ev.beamXangle);
+  t->SetBranchAddress("instLumi",    &ev.instLumi);
 
   //generator level event
   t->SetBranchAddress("g_pu",      &ev.g_pu);
@@ -373,12 +381,16 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("nfwdtrk",         &ev.nfwdtrk);
   t->SetBranchAddress("fwdtrk_pot",       ev.fwdtrk_pot);
   t->SetBranchAddress("fwdtrk_method",    ev.fwdtrk_method);
-  t->SetBranchAddress("fwdtrk_ex",        ev.fwdtrk_ex);
-  t->SetBranchAddress("fwdtrk_ey",        ev.fwdtrk_ey);
-  t->SetBranchAddress("fwdtrk_ez",        ev.fwdtrk_ez);
-  t->SetBranchAddress("fwdtrk_y",         ev.fwdtrk_y);
+  t->SetBranchAddress("fwdtrk_thetax",    ev.fwdtrk_thetax);
+  t->SetBranchAddress("fwdtrk_thetay",    ev.fwdtrk_thetay);
+  t->SetBranchAddress("fwdtrk_vx",        ev.fwdtrk_vx);
+  t->SetBranchAddress("fwdtrk_vy",        ev.fwdtrk_vy);
+  t->SetBranchAddress("fwdtrk_vz",        ev.fwdtrk_vz);
+  t->SetBranchAddress("fwdtrk_time",      ev.fwdtrk_time);
+  t->SetBranchAddress("fwdtrk_timeError", ev.fwdtrk_timeError);
   t->SetBranchAddress("fwdtrk_chisqnorm", ev.fwdtrk_chisqnorm);
   t->SetBranchAddress("fwdtrk_xi",        ev.fwdtrk_xi);
+  t->SetBranchAddress("fwdtrk_xiError",   ev.fwdtrk_xiError);
   t->SetBranchAddress("fwdtrk_t",         ev.fwdtrk_t);
 
   //

@@ -70,11 +70,8 @@ options.register('applyFilt', True,
 options.parseArguments()
 
 #start process
-if options.runProtonFastSim:
-      from Configuration.StandardSequences.Eras import eras
-      process = cms.Process("MiniAnalysis", eras.ctpps_2016)      
-else:
-      process = cms.Process("MiniAnalysis")
+from Configuration.StandardSequences.Eras import eras
+process = cms.Process("MiniAnalysis", eras.ctpps_2016)      
 
 #get the configuration to apply
 from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
@@ -94,6 +91,7 @@ customizeEGM(process=process,era=options.era)
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, globalTag)
+print 'Global tag is',globalTag
 
 process.load("GeneratorInterface.RivetInterface.mergedGenParticles_cfi")
 process.load("GeneratorInterface.RivetInterface.genParticles2HepMC_cfi")
@@ -240,13 +238,11 @@ if process.fullPatMetSequenceModifiedMET:
 if not (options.runOnData or options.noParticleLevel):
       process.mctruth=cms.Path(process.mergedGenParticles*process.genParticles2HepMC*process.particleLevel)
       toSchedule.append( process.mctruth )
+
 if options.runOnData:
-      if 'era2017' in options.era:
-            process.load("RecoCTPPS.ProtonReconstruction.year_2017_OF.ctppsProtonReconstructionOF_cfi")
-            process.ppsReco=cms.Path(process.ctppsProtonReconstructionOFDB)
-      else:
-            process.load("RecoCTPPS.ProtonReconstruction.year_2016.ctppsProtonReconstruction_cfi")
-            process.ppsReco=cms.Path(process.ctppsProtonReconstruction)
+      from TopLJets2015.TopAnalysis.protonReco_cfg import ctppsCustom
+      ctppsCustom(process)
+      process.ppsReco=cms.Path(process.ppsSeq)
       toSchedule.append(process.ppsReco)
 
 if options.runProtonFastSim:
@@ -263,17 +259,12 @@ process.ana=cms.Path(process.analysis)
 toSchedule.append( process.ana )
 if options.runOnData:
 
-      if 'era2017' in options.era:
-            process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstructionOFDB')
-      else:
-            process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstruction')
-
+      process.analysis.tagRecoProtons = cms.InputTag('ctppsProtons')      
       if options.runL1PrefireAna:
             print 'Prefire analysis is scheduled to be executed'
             from TopLJets2015.TopAnalysis.l1prefireAnalysis_cfi import *
             defineL1PrefireAnalysis(process,options.era)
             toSchedule.append(process.l1prefirePath)
-print process.analysis.tagRecoProtons
                       
 process.schedule=cms.Schedule( (p for p in toSchedule) )
 print process.schedule

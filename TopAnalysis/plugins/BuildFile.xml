@@ -11,6 +11,7 @@
 <use name="DataFormats/Math"/>
 <use name="DataFormats/Common"/>
 <use name="CommonTools/UtilAlgos"/>
+<use name="CondFormats/RunInfo"/>
 <use name="EgammaAnalysis/ElectronTools"/>
 <use name="SimDataFormats/PileupSummaryInfo"/>
 <use name="TopQuarkAnalysis/BFragmentationAnalyzer"/>

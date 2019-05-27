@@ -14,6 +14,7 @@ struct MiniEvent_t
   Bool_t isData;
   UInt_t run,lumi;
   ULong64_t event;
+  Float_t beamXangle, instLumi;
 
   //gen level event
   Int_t g_id1, g_id2;
@@ -75,7 +76,10 @@ struct MiniEvent_t
 
   //CTPPS protons
   Short_t nfwdtrk,fwdtrk_pot[50],fwdtrk_method[50];
-  Float_t fwdtrk_ex[50],fwdtrk_ey[50],fwdtrk_ez[50],fwdtrk_y[50],fwdtrk_chisqnorm[50],fwdtrk_xi[50],fwdtrk_t[50];
+  Float_t fwdtrk_thetax[50],fwdtrk_thetay[50],
+    fwdtrk_vx[50],fwdtrk_vy[50],fwdtrk_vz[50],
+    fwdtrk_time[50],fwdtrk_timeError[50],
+    fwdtrk_chisqnorm[50],fwdtrk_xi[50],fwdtrk_xiError[50],fwdtrk_t[50];
 
   //these are crazy variables for the cross check
   Int_t nrawmu;
