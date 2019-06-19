@@ -5,8 +5,8 @@ def getEraConfiguration(era,isData):
     """ defines global tags, JEC/R corrections, etc. depending on the era """
 
     globalTags = {
-        'era2016':('94X_mcRun2_asymptotic_v3', '106X_dataRun2_v10'),
-        'era2017':('94X_mc2017_realistic_v17', '106X_dataRun2_v10')
+        'era2016':('102X_mc2017_realistic_v6', '106X_dataRun2_v11'),
+        'era2017':('102X_mc2017_realistic_v6', '106X_dataRun2_v11')
         }
     jecFiles    = {
         'era2016':('Summer16_07Aug2017_V11_MC',   'Summer16_07Aug2017All_V11_DATA', 'Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs'),

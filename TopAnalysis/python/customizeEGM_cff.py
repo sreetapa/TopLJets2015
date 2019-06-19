@@ -6,6 +6,10 @@ def customizeEGM(process,era):
 
     egmEra='2017-Nov17ReReco'
     if '2016' in era: egmEra='2016-Legacy'
-    setupEgammaPostRecoSeq(process,runVID=True,era=egmEra)
-
+    if '2018' in era: egmEra="2018-Prompt"
+    setupEgammaPostRecoSeq(process,isMiniAOD=True,runEnergyCorrections=False,era=egmEra)
+    #setupEgammaPostRecoSeq(process,isMiniAOD=True,applyEnergyCorrections=True,applyVIDOnCorrectedEgamma=True,era=egmEra)
+    #process.electronMVAValueMapProducer.src = cms.InputTag("gedGsfElectrons","","MINIAOD")
+    #process.photonMVAValueMapProducer.src = cms.InputTag("gedPhotons","","MINIAOD")
+    
     process.egammaPostReco=cms.Path(process.egammaPostRecoSeq)

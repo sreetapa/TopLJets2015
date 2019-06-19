@@ -34,13 +34,7 @@ def ctppsCustom(process):
     
     # local RP reconstruction chain with standard settings
     process.load("RecoCTPPS.Configuration.recoCTPPS_cff")
-    process.ppsSeq=cms.Sequence(process.totemRPUVPatternFinder
-                                * process.totemRPLocalTrackFitter
-                                * process.ctppsDiamondRecHits
-                                * process.ctppsDiamondLocalTracks
-                                * process.ctppsPixelLocalTracks
-                                * process.ctppsLocalTrackLiteProducer
-                                * process.ctppsProtons)
+    process.ppsSeq=cms.Sequence(process.ctppsProtons)
     
 def setupProtonReco(process,xangle):
 
