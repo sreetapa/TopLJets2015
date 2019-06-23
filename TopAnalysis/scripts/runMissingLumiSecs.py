@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import das_client
 import sys
 import os
 import json

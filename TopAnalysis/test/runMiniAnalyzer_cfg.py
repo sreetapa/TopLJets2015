@@ -255,8 +255,8 @@ if options.runProtonFastSim:
       process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstructionOFDB')
 
 
-#process.ana=cms.Path(process.analysis)
-#toSchedule.append( process.ana )
+process.ana=cms.Path(process.analysis)
+toSchedule.append( process.ana )
 if options.runOnData:
       process.analysis.tagRecoProtons = cms.InputTag('ctppsProtons')      
                            
