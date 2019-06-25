@@ -3,6 +3,10 @@
 "Data13TeV_2018B_MuonEG"        : [1, 1, "/MuonEG/Run2018A-17Sep2018-v1/MINIAOD", "Data", 1, false, false, 0],
 "Data13TeV_2018C_MuonEG"        : [1, 1, "/MuonEG/Run2018C-17Sep2018-v1/MINIAOD", "Data", 1, false, false, 0],
 "Data13TeV_2018D_MuonEG"        : [1, 1, "/MuonEG/Run2018D-PromptReco-v2/MINIAOD", "Data", 1, false, false, 0],
+
+
+
+
 "Data13TeV_2018A_SingleMuon"    : [1, 1, "/SingleMuon/Run2018C-17Sep2018-v1/MINIAOD", "Data", 1, false, false, 0],
 "Data13TeV_2018B_SingleMuon"    : [1, 1, "/SingleMuon/Run2018B-17Sep2018-v1/MINIAOD", "Data", 1, false, false, 0],
 "Data13TeV_2018C_SingleMuon_v1" : [1, 1, "/SingleMuon/Run2018A-17Sep2018-v1/MINIAOD", "Data", 1, false, false, 0],
