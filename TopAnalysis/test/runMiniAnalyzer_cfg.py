@@ -85,7 +85,7 @@ process.load('Configuration.StandardSequences.MagneticField_38T_cff')
 
 #EGM customization
 from TopLJets2015.TopAnalysis.customizeEGM_cff import customizeEGM
-customizeEGM(process=process,era=options.era)
+customizeEGM(process=process,era=options.era,runWithAOD=options.runWithAOD)
 
 # global tag
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
@@ -128,14 +128,30 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 # set input to process
 process.source = cms.Source("PoolSource",
-                            fileNames = cms.untracked.vstring('/store/mc/RunIIFall17MiniAODv2/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FE7ABAEB-4A42-E811-87A3-0CC47AD98D26.root'),
+                            fileNames = cms.untracked.vstring(),
                             duplicateCheckMode = cms.untracked.string('noDuplicateCheck') 
                             )
 if '2016' in options.era:
-      process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/ST_t-channel_antitop_4f_mtop1715_inclusiveDecays_13TeV-powhegV2-madspin-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v1/120000/16CEB785-3FE6-E811-AAE8-FA163E9D74F8.root')
-
-if options.runOnData:
-      if '2017' in options.era:
+      if options.runOnData:
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/SingleMuon/MINIAOD/17Jul2018_ver2-v1/00000/0219DD4A-7D8C-E811-B7EB-001E67248A43.root')
+            if options.runWithAOD:
+                  print 'Adding secondary filenames'
+                  process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/110000/B6479036-9486-E711-A6CF-003048FFD734.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/110001/0A8A7032-9086-E711-BD1B-0025905A60C6.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/110001/22FFA42A-9086-E711-9B49-0CC47A7C3472.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70000/767AE9A5-BA81-E711-9A8E-0CC47A745282.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70000/D67D18A5-BA81-E711-B6C2-0CC47A7C361E.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70000/E06164A7-BA81-E711-B612-0025905B858A.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/302E2840-C481-E711-8913-002618FDA259.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/687FA66D-BC81-E711-B41D-0CC47A745282.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/6890466C-BC81-E711-9C62-0CC47A4C8E1C.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/E64E346F-BC81-E711-93BC-0CC47A4C8F18.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/EC3632F7-C081-E711-B219-0CC47A7452DA.root',
+                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/F6499DE0-C281-E711-9835-0CC47A78A33E.root'])
+      else:
+            process.source.fileNames = cms.untracked.vstring('/store/mc/RunIISummer16MiniAODv3/ST_t-channel_antitop_4f_mtop1715_inclusiveDecays_13TeV-powhegV2-madspin-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext1-v1/120000/16CEB785-3FE6-E811-AAE8-FA163E9D74F8.root')
+elif '2017' in options.era:
+      if options.runOnData:
             #process.source.fileNames = cms.untracked.vstring('/store/data/Run2017F/ZeroBias/MINIAOD/31Mar2018-v1/30000/8604984F-DF37-E811-ACFE-008CFA197B74.root')
             process.source.fileNames = cms.untracked.vstring('/store/data/Run2017B/SingleMuon/MINIAOD/31Mar2018-v1/90000/46CE7E24-EA37-E811-95CB-0025905A6132.root')
             if options.runWithAOD:
@@ -156,59 +172,37 @@ if options.runOnData:
                                                                              '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/82906F7E-C4D8-E711-8A90-FA163EDC0DF0.root',
                                                                              '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/38AFFEDF-C7D8-E711-85A5-FA163EE5AC62.root',
                                                                              '/store/data/Run2017B/SingleMuon/AOD/17Nov2017-v1/40000/16C2CF2F-CAD8-E711-8630-FA163E9C5649.root'
-                                                                             ])
-      elif '2018' in options.era:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2018D/SingleMuon/MINIAOD/PromptReco-v2/000/325/001/00000/E4A5114B-87A1-5244-A82F-C810E06A6EFA.root')
+                                                                       ])
+      else:
+            process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall17MiniAODv2/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FE7ABAEB-4A42-E811-87A3-0CC47AD98D26.root')
+elif '2018' in options.era:
+      if options.runOnData:
+            process.source.fileNames = cms.untracked.vstring('/store/data/Run2018C/SingleMuon/MINIAOD/17Sep2018-v1/00000/AB61FB4F-3A42-4B4F-93E2-78CD7E7CF0A4.root')
             if options.runWithAOD:
                   print 'Adding secondary filenames'
                   process.source.secondaryFileNames = cms.untracked.vstring([
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/E4C865F4-CAF0-A047-A4C9-055A8731DBD5.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/00E04CC2-4EFE-814D-AA1B-A260246B2B61.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/DE0267EE-4B93-A445-B368-741AFFBC3790.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/E0F4348B-08AB-274C-8A5A-1D339A3C7C65.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/E8370901-46DE-564F-BB1D-7FBE1C48FBFD.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/F1F34366-D7F5-974E-9B23-17D8B8B81B22.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/DD605145-693E-1D41-9B8F-732AF82190A4.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/CF5AF7A9-C27E-5D42-AE56-D430F8CFDEA3.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/CC6892AB-7588-D64D-976F-0F113395F712.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/B17BA02E-1988-BE45-9CB2-2B550EEC5CA0.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/A29DA982-5015-B943-BE0E-54D97CB85262.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/9F010069-21D9-CE4F-A25E-3CC724D25537.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/819397B5-9EBE-7240-9879-2E16CE5E5DC4.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/77BF9FFC-4A63-804E-B7A5-82D1D62B0465.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/5CDFB33C-26D6-9849-8C3E-8A3ADCBE9DCA.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/4EFF4077-DEE4-3242-AB47-47863E82E586.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/4CECB062-26A4-A041-86B0-0E10EFECFC52.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/1BD78D97-19BD-9346-AE92-6CC2C5447290.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/508C6852-B14B-C146-AC2B-CBAA0572262E.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/22E112CB-975A-CA4B-A3AB-497058F2CCB3.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/1BCF511B-C81F-A04F-BD01-7A40E1EC5F60.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/129C4BEF-C3A6-BA45-AF85-9352A7EF5D43.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/0FAB9271-24D9-7041-93AC-0DAE36520AEF.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/0B0BB432-3587-274F-A5B2-9E3D501D6BA3.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/BAD48B74-91BA-EC45-88DF-D12E12079F19.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/BE535651-B675-E54E-A0F8-BD5FD6EE030F.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/08D02A96-3056-374C-BA74-87A0F3E77BB6.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/041D9B36-E41A-DD4A-995A-4642D1CCD8F7.root',
-                        '/store/data/Run2018D/SingleMuon/RAW/v1/000/325/001/00000/E4B7AF86-6865-BF46-A9FA-F10D6618F992.root'
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/065/00000/C45A09EB-328E-E811-BFEC-FA163EDD3A25.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/065/00000/0A3EDD77-128E-E811-8885-FA163E08D4C1.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/065/00000/1E0CFF73-128E-E811-9B2B-FA163E6DCA76.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/065/00000/9659EBAF-108E-E811-93CB-FA163E82172A.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/025/00000/F05577B5-568D-E811-A9FA-FA163E513903.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/026/00000/26D29DBA-5F8D-E811-9D7B-FA163E600F07.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/026/00000/9239C9D4-5F8D-E811-BD2C-FA163ECED2A8.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/065/00000/BEED33AC-328E-E811-8305-FA163EDE7DC6.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/025/00000/C662E202-578D-E811-8E1E-FA163E7FB452.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/024/00000/F4B08B5F-528D-E811-965A-FA163ED40F48.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/024/00000/0863DA3E-548D-E811-B8E1-A4BF01277823.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/009/00000/0218B251-F28C-E811-81CD-FA163ED486E3.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/010/00000/768D18BE-F98C-E811-A332-FA163E60ED2F.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/007/00000/D208B88E-E98C-E811-9B7F-FA163E61ADEA.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/007/00000/DAA30463-E98C-E811-918B-FA163EF70A72.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/010/00000/7A33E7D8-F78C-E811-AF32-FA163E3AFBF6.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/319/854/00000/A4D6882F-768A-E811-9978-FA163E11A4DA.root',
+                        '/store/data/Run2018C/SingleMuon/RAW/v1/000/320/007/00000/B4B0ADA6-E88C-E811-B65F-FA163E105698.root'
                   ])
       else:
-            process.source.fileNames = cms.untracked.vstring('/store/data/Run2016B/SingleMuon/MINIAOD/17Jul2018_ver2-v1/00000/0219DD4A-7D8C-E811-B7EB-001E67248A43.root')
-            if options.runWithAOD:
-                  print 'Adding secondary filenames'
-                  process.source.secondaryFileNames = cms.untracked.vstring(['/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/110000/B6479036-9486-E711-A6CF-003048FFD734.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/110001/0A8A7032-9086-E711-BD1B-0025905A60C6.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/110001/22FFA42A-9086-E711-9B49-0CC47A7C3472.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70000/767AE9A5-BA81-E711-9A8E-0CC47A745282.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70000/D67D18A5-BA81-E711-B6C2-0CC47A7C361E.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70000/E06164A7-BA81-E711-B612-0025905B858A.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/302E2840-C481-E711-8913-002618FDA259.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/687FA66D-BC81-E711-B41D-0CC47A745282.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/6890466C-BC81-E711-9C62-0CC47A4C8E1C.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/E64E346F-BC81-E711-93BC-0CC47A4C8F18.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/EC3632F7-C081-E711-B219-0CC47A7452DA.root',
-                                                                             '/store/data/Run2016B/SingleMuon/AOD/07Aug17_ver2-v1/70001/F6499DE0-C281-E711-9835-0CC47A78A33E.root'])
-
+            print 'FIXME: add a MC test file for 2018...'
+      
 if options.inputFile:
       fileList=[]
       secFileList=[]
@@ -251,6 +245,10 @@ if 'era2017' in options.era:
       process.analysis.jetIdToUse=ANALYSISJETIDS[2017]
       process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2017]
       print '\t Using 2017 triggers/jet ids'
+elif 'era2018' in options.era:
+      process.analysis.jetIdToUse=ANALYSISJETIDS[2018]
+      process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2018]
+      print '\t Using 2018 triggers/jet ids'
 else:
       process.analysis.jetIdToUse=ANALYSISJETIDS[2016]
       process.analysis.triggersToUse=ANALYSISTRIGGERLISTS[2016]

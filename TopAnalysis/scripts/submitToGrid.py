@@ -36,7 +36,7 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
         config_file.write('config.JobType.pyCfgParams = [\'applyFilt=False\', \'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
     else:
         if isData:
-            config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'runWithAOD=True\']\n' % era )
+            config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\']\n' % era )
         else:
             config_file.write('config.JobType.pyCfgParams = [\'runOnData=False\',\'era=%s\']\n' % era )
 

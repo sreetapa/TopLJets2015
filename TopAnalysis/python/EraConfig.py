@@ -17,7 +17,7 @@ def getEraConfiguration(era,isData):
     jerFiles    = {
         'era2016':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
         'era2017':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
-        'era2018':('Autumn18_V1_MC_SF_AK4PFchs', 'Autumn18_V1_DATA_SF_AK4PFchs'),
+        'era2018':('Autumn18_V1_MC',             'Autumn18_V1_DATA'),
         }
     muonFiles   = {
         'era2016':'RoccoR2016.txt',

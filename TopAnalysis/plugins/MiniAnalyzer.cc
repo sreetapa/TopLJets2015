@@ -724,7 +724,13 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   for (const pat::Electron &e : *electrons) 
     {        
 
-      auto corrP4  = e.p4() * e.userFloat("ecalTrkEnergyPostCorr") / e.energy();
+      float enSF(1.0);
+      try{
+        enSF=e.userFloat("ecalTrkEnergyPostCorr");
+      }catch(...){
+      }
+          
+      auto corrP4  = e.p4() * enSF / e.energy();
 
       //kinematics cuts
       bool passPt(corrP4.pt() > 15.0);
@@ -836,7 +842,13 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   iEvent.getByToken(photonToken_, photons);    
   for (const pat::Photon &g : *photons)
     {        
-      auto corrP4  = g.p4() * g.userFloat("ecalEnergyPostCorr") / g.energy();
+      float enSF(1.0);
+      try{
+        enSF=g.userFloat("ecalEnergyPostCorr");
+      }catch(...){
+      }
+
+      auto corrP4  = g.p4() * enSF / g.energy();
 
       //kinematics cuts
       bool passPt(corrP4.pt() > 30.0);
