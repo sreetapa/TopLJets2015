@@ -6,19 +6,23 @@ def getEraConfiguration(era,isData):
 
     globalTags = {
         'era2016':('102X_mc2017_realistic_v6', '106X_dataRun2_v11'),
-        'era2017':('102X_mc2017_realistic_v6', '106X_dataRun2_v11')
+        'era2017':('102X_mc2017_realistic_v6', '106X_dataRun2_v11'),
+        'era2018':('102X_mc2017_realistic_v6', '106X_dataRun2_v11')
         }
     jecFiles    = {
         'era2016':('Summer16_07Aug2017_V11_MC',   'Summer16_07Aug2017All_V11_DATA', 'Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs'),
-        'era2017':('Fall17_17Nov2017_V32_94X_MC', 'Fall17_17Nov2017_V32_94X_DATA',  'Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs')
+        'era2017':('Fall17_17Nov2017_V32_94X_MC', 'Fall17_17Nov2017_V32_94X_DATA',  'Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs'),
+        'era2018':('Autumn18_V8_MC',              'Autumn18_RunABCD_V8_DATA',       'Autumn18_V8_MC_UncertaintySources_AK4PFchs')
         }
     jerFiles    = {
         'era2016':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
         'era2017':('Summer16_25nsV1_MC',         'Summer16_25nsV1_DATA'),
+        'era2018':('Autumn18_V1_MC_SF_AK4PFchs', 'Autumn18_V1_DATA_SF_AK4PFchs'),
         }
     muonFiles   = {
         'era2016':'RoccoR2016.txt',
-        'era2017':'RoccoR2017.txt'
+        'era2017':'RoccoR2017.txt',
+        'era2018':'RoccoR2018.txt'
         }
     globalTag = globalTags[era][isData]
     jecFile   = jecFiles[era][isData]
