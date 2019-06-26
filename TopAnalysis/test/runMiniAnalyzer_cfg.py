@@ -256,6 +256,7 @@ else:
 if options.runOnData:
       process.analysis.metFilterBits = cms.InputTag("TriggerResults","","RECO")
       print '\t will save met filter bits'
+      process.analysis.tagRecoProtons = cms.InputTag('ctppsProtons','singleRP')      
 
 #schedule execution
 toSchedule=[]
@@ -284,14 +285,10 @@ if options.runProtonFastSim:
       toSchedule.append(process.pps_fastsim)
       toSchedule.append(process.pps_simulation_step)
       toSchedule.append(process.pps_reco_step)
-
       process.analysis.tagRecoProtons = cms.InputTag('ctppsProtonReconstructionOFDB')
-
 
 process.ana=cms.Path(process.analysis)
 toSchedule.append( process.ana )
-if options.runOnData:
-      process.analysis.tagRecoProtons = cms.InputTag('ctppsProtons')      
                            
 process.schedule=cms.Schedule( (p for p in toSchedule) )
 print process.schedule

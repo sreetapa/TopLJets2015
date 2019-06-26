@@ -590,11 +590,11 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
           ev_.fwdtrk_xi[ev_.nfwdtrk]        = proton.xi();
           ev_.fwdtrk_xiError[ev_.nfwdtrk]   = proton.xiError();
           ev_.fwdtrk_t[ev_.nfwdtrk]         = proton.t();
-                  
           ev_.nfwdtrk++;
         }
     }
-    catch(...){
+    catch(std::exception &e){
+      cout << e.what() << endl;
     }
   }
 

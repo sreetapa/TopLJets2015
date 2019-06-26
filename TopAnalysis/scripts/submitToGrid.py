@@ -36,32 +36,42 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
         config_file.write('config.JobType.pyCfgParams = [\'applyFilt=False\', \'runOnData=%s\',\'era=%s\']\n' % (bool(isData),era))
     else:
         if isData:
-            config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\']\n' % era )
+            if addParents:
+                config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'runWithAOD=True\']\n' % era )
+            else:
+                config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\']\n' % era )
         else:
             config_file.write('config.JobType.pyCfgParams = [\'runOnData=False\',\'era=%s\']\n' % era )
 
     #config_file.write('config.JobType.inputFiles = [\'{0}/{1}\',\'{0}/{2}\',\'{0}/muoncorr_db.txt\',\'{0}/jecUncSources.txt\']\n'.format(cmssw,jecDB,jerDB))
+    
     config_file.write('config.JobType.inputFiles = [\'{0}\',\'{1}\',\'muoncorr_db.txt\',\'jecUncSources.txt\',\'qg_db.db\',\'ctpps_db.db\']\n'.format(jecDB,jerDB))
     config_file.write('\n')
     config_file.write('config.section_("Data")\n')
     config_file.write('config.Data.inputDataset = "%s"\n' % dataset)
     config_file.write('config.Data.inputDBS = "global"\n')
+
     config_file.write('config.Data.useParent = %s\n'% bool(addParents) )
+    if addParents:
+        config_file.write('config.Data.ignoreLocality = True\n')    
+    else:
+        config_file.write('config.Data.ignoreLocality = False\n')    
+
     if isData :         
         config_file.write('config.Data.splitting = "Automatic"\n')
-        #config_file.write('config.Data.splitting = "LumiBased"\n')
-        #config_file.write('config.Data.unitsPerJob = 100\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
     else : 
         config_file.write('config.Data.splitting = "FileBased"\n')
         config_file.write('config.Data.unitsPerJob = 4\n')
      
-    config_file.write('config.Data.ignoreLocality = False\n')    
     config_file.write('config.Data.publication = False\n')
     config_file.write('config.Data.outLFNDirBase = \"%s\"\n' % lfnDirBase)
     config_file.write('\n')
     config_file.write('config.section_("Site")\n')
     config_file.write('config.Site.storageSite = "T2_CH_CERN"\n')
+    if addParents:
+        config_file.write('config.Site.whitelist = [\'T2_CH_*\',\'T2_DE_*\',\'T2_IT_*\',\'T2_US_*\']\n')    
+
     config_file.close()
     
     if submit : os.system('alias crab=\'/cvmfs/cms.cern.ch/crab3/crab-env-bootstrap.sh\' && crab submit -c %s' % crabConfigFile )
@@ -75,7 +85,7 @@ def main():
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
     parser.add_option('-c', '--cfg',         dest='cfg'   ,      help='cfg to be sent to grid',       default=None,    type='string')
-    parser.add_option(      '--addParents',  dest='addParents',  help='analyze paents as well',       default=False,   action='store_true')
+    parser.add_option(      '--addParents',  dest='addParents',  help='analyze parents as well',       default=False,   action='store_true')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',      default=None,    type='string')
     parser.add_option('-o', '--only',        dest='only'  ,      help='submit only these (csv)',      default=None,    type='string')
     parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt')

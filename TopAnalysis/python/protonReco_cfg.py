@@ -2,39 +2,43 @@ import FWCore.ParameterSet.Config as cms
 from CondCore.CondDB.CondDB_cfi import *
 from CondCore.CondDB.CondDB_cfi import *
 
-def ctppsCustom(process):
+def ctppsCustom(process,useOpticsFromDB=False):
     """ based on https://twiki.cern.ch/twiki/pub/CMS/TaggedProtonsRecommendations/example_cfg.py.txt """
 
     # get optics from a DB tag
-    
-    process.CondDBOptics = CondDB.clone( connect = 'frontier://FrontierProd/CMS_CONDITIONS' )
-    process.PoolDBESSourceOptics = cms.ESSource("PoolDBESSource",
-                                                process.CondDBOptics,
-                                                DumpStat = cms.untracked.bool(False),
-                                                toGet = cms.VPSet(cms.PSet(
-                                                    record = cms.string('CTPPSOpticsRcd'),
-                                                    tag = cms.string("PPSOpticalFunctions_offline_v2")
-                                                )),
-                                            )
-    
-    process.esPreferDBFileOptics = cms.ESPrefer("PoolDBESSource", "PoolDBESSourceOptics")
+    if useOpticsFromDB:
+        process.CondDBOptics = CondDB.clone( connect = 'frontier://FrontierProd/CMS_CONDITIONS' )
+        process.PoolDBESSourceOptics = cms.ESSource("PoolDBESSource",
+                                                    process.CondDBOptics,
+                                                    DumpStat = cms.untracked.bool(False),
+                                                    toGet = cms.VPSet(cms.PSet(
+                                                        record = cms.string('CTPPSOpticsRcd'),
+                                                        tag = cms.string("PPSOpticalFunctions_offline_v2")
+                                                    )),
+                                                )
+        process.esPreferDBFileOptics = cms.ESPrefer("PoolDBESSource", "PoolDBESSourceOptics")
 
-    # get alignment from SQLite file
-    process.CondDBAlignment = CondDB.clone( connect = 'sqlite:ctpps_db.db')
-    process.PoolDBESSourceAlignment = cms.ESSource("PoolDBESSource",
-                                                   process.CondDBAlignment,
-                                                   #timetype = cms.untracked.string('runnumber'),
-                                                   toGet = cms.VPSet(cms.PSet(
-                                                       record = cms.string('RPRealAlignmentRecord'),
-                                                       tag = cms.string('CTPPSRPAlignment_real_table_v26A19')
-                                                   ))
-                                               )
-    
-    process.esPreferDBFileAlignment = cms.ESPrefer("PoolDBESSource", "PoolDBESSourceAlignment")
+        # get alignment from SQLite file
+        process.CondDBAlignment = CondDB.clone( connect = 'sqlite:ctpps_db.db')
+        process.PoolDBESSourceAlignment = cms.ESSource("PoolDBESSource",
+                                                       process.CondDBAlignment,
+                                                       #timetype = cms.untracked.string('runnumber'),
+                                                       toGet = cms.VPSet(cms.PSet(
+                                                           record = cms.string('RPRealAlignmentRecord'),
+                                                           tag = cms.string('CTPPSRPAlignment_real_table_v26A19')
+                                                       ))
+                                                   )
+        process.esPreferDBFileAlignment = cms.ESPrefer("PoolDBESSource", "PoolDBESSourceAlignment")
     
     # local RP reconstruction chain with standard settings
     process.load("RecoCTPPS.Configuration.recoCTPPS_cff")
-    process.ppsSeq=cms.Sequence(process.ctppsProtons)
+    process.ppsSeq=cms.Sequence(process.totemRPUVPatternFinder
+                                * process.totemRPLocalTrackFitter
+                                * process.ctppsDiamondRecHits
+                                * process.ctppsDiamondLocalTracks
+                                * process.ctppsPixelLocalTracks
+                                * process.ctppsLocalTrackLiteProducer
+                                * process.ctppsProtons)
     
 def setupProtonReco(process,xangle):
 
