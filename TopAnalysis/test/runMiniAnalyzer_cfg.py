@@ -275,7 +275,7 @@ if not (options.runOnData or options.noParticleLevel):
 
 if options.runOnData:
       from TopLJets2015.TopAnalysis.protonReco_cfg import ctppsCustom
-      ctppsCustom(process)
+      ctppsCustom(process,options.era)
       process.ppsReco=cms.Path(process.ppsSeq)
       toSchedule.append(process.ppsReco)
 

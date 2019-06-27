@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from CondCore.CondDB.CondDB_cfi import *
 from CondCore.CondDB.CondDB_cfi import *
 
-def ctppsCustom(process,useOpticsFromDB=False):
+def ctppsCustom(process,era,useOpticsFromDB=False):
     """ based on https://twiki.cern.ch/twiki/pub/CMS/TaggedProtonsRecommendations/example_cfg.py.txt """
 
     # get optics from a DB tag
@@ -32,13 +32,22 @@ def ctppsCustom(process,useOpticsFromDB=False):
     
     # local RP reconstruction chain with standard settings
     process.load("RecoCTPPS.Configuration.recoCTPPS_cff")
-    process.ppsSeq=cms.Sequence(process.totemRPUVPatternFinder
-                                * process.totemRPLocalTrackFitter
-                                * process.ctppsDiamondRecHits
-                                * process.ctppsDiamondLocalTracks
-                                * process.ctppsPixelLocalTracks
-                                * process.ctppsLocalTrackLiteProducer
-                                * process.ctppsProtons)
+    
+    if '2016' in era:
+        process.ppsSeq=cms.Sequence(process.totemRPUVPatternFinder
+                                    * process.totemRPLocalTrackFitter
+                                    * process.ctppsDiamondRecHits
+                                    * process.ctppsDiamondLocalTracks
+                                    * process.ctppsLocalTrackLiteProducer
+                                    * process.ctppsProtons)
+    else:
+        process.ppsSeq=cms.Sequence(process.totemRPUVPatternFinder
+                                    * process.totemRPLocalTrackFitter
+                                    * process.ctppsDiamondRecHits
+                                    * process.ctppsDiamondLocalTracks
+                                    * process.ctppsPixelLocalTracks
+                                    * process.ctppsLocalTrackLiteProducer
+                                    * process.ctppsProtons)
     
 def setupProtonReco(process,xangle):
 
