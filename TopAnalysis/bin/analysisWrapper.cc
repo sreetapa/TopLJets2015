@@ -5,6 +5,7 @@
 #include "TopLJets2015/TopAnalysis/interface/TOP-17-010.h"
 #include "TopLJets2015/TopAnalysis/interface/VBFVectorBoson.h"
 #include "TopLJets2015/TopAnalysis/interface/PhotonTrigEff.h"
+#include "TopLJets2015/TopAnalysis/interface/TopSummer2019.h"
 
 #include "TH1F.h"
 #include "TFile.h"
@@ -99,6 +100,9 @@ int main(int argc, char* argv[])
   //check method to run
   if(method=="ExclusiveZX::RunExclusiveZX") {
     RunExclusiveZX(in,out,channel,charge,normH,puH,era,debug);
+  }
+  else if(method=="RunTopSummer2019") {
+    RunTopSummer2019(in,out,normH,puH,era,debug);
   }
   else if(method=="PhotonTrigEff::RunPhotonTrigEff") {
     RunPhotonTrigEff(in,out,normH,puH,era,debug);
