@@ -178,18 +178,18 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
 
   //CTPPS local tracks
   t->Branch("nppstrk",         &ev.nppstrk,          "nppstrk/S");
-  t->Branch("ppstrk_pot",       ev.ppstrk_pot,       "ppstrk_pot[nfwdtrk]/S");
-  t->Branch("ppstrk_x",         ev.ppstrk_x,         "ppstrk_x[nfwdtrk]/F");
-  t->Branch("ppstrk_y",         ev.ppstrk_y,         "ppstrk_y[nfwdtrk]/F");
-  t->Branch("ppstrk_xUnc",      ev.ppstrk_xUnc,      "ppstrk_xUnc[nfwdtrk]/F");
-  t->Branch("ppstrk_yUnc",      ev.ppstrk_yUnc,      "ppstrk_yUnc[nfwdtrk]/F");
-  t->Branch("ppstrk_tx",        ev.ppstrk_tx,        "ppstrk_tx[nfwdtrk]/F");
-  t->Branch("ppstrk_ty",        ev.ppstrk_ty,        "ppstrk_ty[nfwdtrk]/F");
-  t->Branch("ppstrk_txUnc",     ev.ppstrk_txUnc,     "ppstrk_txUnc[nfwdtrk]/F");
-  t->Branch("ppstrk_tyUnc",     ev.ppstrk_tyUnc,     "ppstrk_tyUnc[nfwdtrk]/F");
-  t->Branch("ppstrk_chisqnorm", ev.ppstrk_chisqnorm, "ppstrk_chisqnorm[nfwdtrk]/F");
-  //t->Branch("ppstrk_t",         ev.ppstrk_t,         "ppstrk_t[nfwdtrk]/F");
-  //t->Branch("ppstrk_tUnc",      ev.ppstrk_tUnc,      "ppstrk_tUnc[nfwdtrk]/F");
+  t->Branch("ppstrk_pot",       ev.ppstrk_pot,       "ppstrk_pot[nppstrk]/S");
+  t->Branch("ppstrk_x",         ev.ppstrk_x,         "ppstrk_x[nppstrk]/F");
+  t->Branch("ppstrk_y",         ev.ppstrk_y,         "ppstrk_y[nppstrk]/F");
+  t->Branch("ppstrk_xUnc",      ev.ppstrk_xUnc,      "ppstrk_xUnc[nppstrk]/F");
+  t->Branch("ppstrk_yUnc",      ev.ppstrk_yUnc,      "ppstrk_yUnc[nppstrk]/F");
+  t->Branch("ppstrk_tx",        ev.ppstrk_tx,        "ppstrk_tx[nppstrk]/F");
+  t->Branch("ppstrk_ty",        ev.ppstrk_ty,        "ppstrk_ty[nppstrk]/F");
+  t->Branch("ppstrk_txUnc",     ev.ppstrk_txUnc,     "ppstrk_txUnc[nppstrk]/F");
+  t->Branch("ppstrk_tyUnc",     ev.ppstrk_tyUnc,     "ppstrk_tyUnc[nppstrk]/F");
+  t->Branch("ppstrk_chisqnorm", ev.ppstrk_chisqnorm, "ppstrk_chisqnorm[nppstrk]/F");
+  //t->Branch("ppstrk_t",         ev.ppstrk_t,         "ppstrk_t[nppstrk]/F");
+  //t->Branch("ppstrk_tUnc",      ev.ppstrk_tUnc,      "ppstrk_tUnc[nppstrk]/F");
   t->Branch("nfwdtrk",         &ev.nfwdtrk,          "nfwdtrk/S");
   t->Branch("fwdtrk_pot",       ev.fwdtrk_pot,       "fwdtrk_pot[nfwdtrk]/S");
   t->Branch("fwdtrk_method",    ev.fwdtrk_method,    "fwdtrk_method[nfwdtrk]/S");
