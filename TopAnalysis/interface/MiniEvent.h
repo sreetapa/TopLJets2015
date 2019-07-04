@@ -7,8 +7,8 @@ struct MiniEvent_t
 {
   MiniEvent_t()
   {
-    g_nw=0; ng=0; ngtop=0; 
-    ngamma=0; nl=0; nj=0; 
+    g_nw=0; ng=0; ngtop=0;
+    ngamma=0; nl=0; nj=0;
   }
 
   Bool_t isData;
@@ -25,9 +25,9 @@ struct MiniEvent_t
   Int_t ng,ngtop;
   Int_t g_id[500],g_bid[500],g_tagCtrs[500];
   Bool_t g_isSemiLepBhad[500];
-  Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500],g_xb[500],g_xbp[500]; 
+  Float_t g_pt[500],g_eta[500],g_phi[500],g_m[500],g_xb[500],g_xbp[500];
   Int_t gtop_id[25];
-  Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25]; 
+  Float_t gtop_pt[25],gtop_eta[25],gtop_phi[25],gtop_m[25];
   Int_t g_nchPV;
   Float_t g_sumPVChPt,g_sumPVChPz,g_sumPVChHt;
 
@@ -42,13 +42,13 @@ struct MiniEvent_t
   Bool_t l_isPromptFinalState[50], l_isDirectPromptTauDecayProductFinalState[50];
   Int_t l_id[50],l_charge[50],l_pid[50],l_g[200];
   Float_t l_pt[50],l_eta[50],l_phi[50], l_mass[50], l_highpt[50],
-    l_scaleUnc1[50], l_scaleUnc2[50], l_scaleUnc3[50], l_scaleUnc4[50], l_scaleUnc5[50], l_scaleUnc6[50], l_scaleUnc7[50],   
+    l_scaleUnc1[50], l_scaleUnc2[50], l_scaleUnc3[50], l_scaleUnc4[50], l_scaleUnc5[50], l_scaleUnc6[50], l_scaleUnc7[50],
     l_miniIso[50], l_chargedHadronIso[50], l_relIso[50], l_ip3d[50], l_ip3dsig[50],l_mva[50],l_mvaCats[50];
 
   Int_t ngamma;
   Bool_t gamma_isPromptFinalState[50];
   Int_t gamma_pid[50],gamma_idFlags[50],gamma_g[50];
-  Float_t gamma_pt[50],gamma_eta[50],gamma_phi[50], 
+  Float_t gamma_pt[50],gamma_eta[50],gamma_phi[50],
     gamma_scaleUnc1[50],gamma_scaleUnc2[50],gamma_scaleUnc3[50],gamma_scaleUnc4[50],gamma_scaleUnc5[50],gamma_scaleUnc6[50],gamma_scaleUnc7[50],
     gamma_mva[50], gamma_mvaCats[50],
     gamma_chargedHadronIso[50],gamma_neutralHadronIso[50],gamma_photonIso[50],gamma_hoe[50],gamma_r9[50],gamma_sieie[50];
@@ -67,12 +67,19 @@ struct MiniEvent_t
   Float_t met_pt,met_phi,met_sig;
   Float_t met_ptShifted[14],met_phiShifted[14];
   Int_t met_filterBits;
-  
+
   //event energy fluxes (PF-based)
   Int_t nchPV;
   Float_t sumPVChPt,sumPVChPz,sumPVChHt;
   Int_t nPFCands[8],nPFChCands[8];
   Float_t sumPFHt[8],sumPFEn[8],sumPFPz[8],sumPFChHt[8],sumPFChEn[8],sumPFChPz[8];
+
+  //PPS tracks
+  Short_t nppstrk,ppstrk_pot[50];
+  Float_t ppstrk_x[50],ppstrk_y[50], ppstrk_xUnc[50],ppstrk_yUnc[50],
+    ppstrk_tx[50],ppstrk_ty[50],ppstrk_txUnc[50],ppstrk_tyUnc[50],
+    ppstrk_chisqnorm[50];
+    //ppstrk_t[50],ppstrk_tUnc[50]; // UFSD only (2018)
 
   //CTPPS protons
   Short_t nfwdtrk,fwdtrk_pot[50],fwdtrk_method[50];
