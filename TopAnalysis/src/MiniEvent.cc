@@ -28,7 +28,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("g_bid",     ev.g_bid,    "g_bid[ng]/I");
   t->Branch("g_tagCtrs",     ev.g_tagCtrs,    "g_tagCtrs[ng]/I");
   t->Branch("g_isSemiLepBhad",     ev.g_isSemiLepBhad,    "g_isSemiLepBhad[ng]/O");
-  t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");  
+  t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");
   t->Branch("g_xbp",      ev.g_xbp,   "g_xbp[ng]/F");
   t->Branch("g_pt",      ev.g_pt,     "g_pt[ng]/F");
   t->Branch("g_eta",     ev.g_eta,    "g_eta[ng]/F");
@@ -94,7 +94,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("gamma_mvaCats",             ev.gamma_mvaCats,            "gamma_mvaCats[ngamma]/F");
   t->Branch("gamma_pt",                  ev.gamma_pt,                 "gamma_pt[ngamma]/F");
   t->Branch("gamma_eta",                 ev.gamma_eta,                "gamma_eta[ngamma]/F");
-  t->Branch("gamma_phi",                 ev.gamma_phi,                "gamma_phi[ngamma]/F");  
+  t->Branch("gamma_phi",                 ev.gamma_phi,                "gamma_phi[ngamma]/F");
   t->Branch("gamma_scaleUnc1",           ev.gamma_scaleUnc1,          "gamma_scaleUnc1[ngamma]/F");
   t->Branch("gamma_scaleUnc2",           ev.gamma_scaleUnc2,          "gamma_scaleUnc2[ngamma]/F");
   t->Branch("gamma_scaleUnc3",           ev.gamma_scaleUnc3,          "gamma_scaleUnc3[ngamma]/F");
@@ -177,6 +177,19 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("met_filterBits", &ev.met_filterBits, "met_filterBits/I");
 
   //CTPPS local tracks
+  t->Branch("nppstrk",         &ev.nppstrk,          "nppstrk/S");
+  t->Branch("ppstrk_pot",       ev.ppstrk_pot,       "ppstrk_pot[nppstrk]/S");
+  t->Branch("ppstrk_x",         ev.ppstrk_x,         "ppstrk_x[nppstrk]/F");
+  t->Branch("ppstrk_y",         ev.ppstrk_y,         "ppstrk_y[nppstrk]/F");
+  t->Branch("ppstrk_xUnc",      ev.ppstrk_xUnc,      "ppstrk_xUnc[nppstrk]/F");
+  t->Branch("ppstrk_yUnc",      ev.ppstrk_yUnc,      "ppstrk_yUnc[nppstrk]/F");
+  t->Branch("ppstrk_tx",        ev.ppstrk_tx,        "ppstrk_tx[nppstrk]/F");
+  t->Branch("ppstrk_ty",        ev.ppstrk_ty,        "ppstrk_ty[nppstrk]/F");
+  t->Branch("ppstrk_txUnc",     ev.ppstrk_txUnc,     "ppstrk_txUnc[nppstrk]/F");
+  t->Branch("ppstrk_tyUnc",     ev.ppstrk_tyUnc,     "ppstrk_tyUnc[nppstrk]/F");
+  t->Branch("ppstrk_chisqnorm", ev.ppstrk_chisqnorm, "ppstrk_chisqnorm[nppstrk]/F");
+  //t->Branch("ppstrk_t",         ev.ppstrk_t,         "ppstrk_t[nppstrk]/F");
+  //t->Branch("ppstrk_tUnc",      ev.ppstrk_tUnc,      "ppstrk_tUnc[nppstrk]/F");
   t->Branch("nfwdtrk",         &ev.nfwdtrk,          "nfwdtrk/S");
   t->Branch("fwdtrk_pot",       ev.fwdtrk_pot,       "fwdtrk_pot[nfwdtrk]/S");
   t->Branch("fwdtrk_method",    ev.fwdtrk_method,    "fwdtrk_method[nfwdtrk]/S");
@@ -343,7 +356,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_gathrust", ev.j_gathrust);
   t->SetBranchAddress("j_tau32",    ev.j_tau32);
   t->SetBranchAddress("j_tau21",    ev.j_tau21);
-  t->SetBranchAddress("j_deepcsv",  ev.j_deepcsv);  
+  t->SetBranchAddress("j_deepcsv",  ev.j_deepcsv);
   t->SetBranchAddress("j_vtxpx",    ev.j_vtxpx);
   t->SetBranchAddress("j_vtxpy",    ev.j_vtxpy);
   t->SetBranchAddress("j_vtxpz",    ev.j_vtxpz);
@@ -378,6 +391,19 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("met_filterBits", &ev.met_filterBits);
 
   //CTPPS local tracks
+  t->SetBranchAddress("nppstrk",         &ev.nppstrk);
+  t->SetBranchAddress("ppstrk_pot",       ev.ppstrk_pot);
+  t->SetBranchAddress("ppstrk_x",         ev.ppstrk_x);
+  t->SetBranchAddress("ppstrk_y",         ev.ppstrk_y);
+  t->SetBranchAddress("ppstrk_xUnc",      ev.ppstrk_xUnc);
+  t->SetBranchAddress("ppstrk_yUnc",      ev.ppstrk_yUnc);
+  t->SetBranchAddress("ppstrk_tx",        ev.ppstrk_tx);
+  t->SetBranchAddress("ppstrk_ty",        ev.ppstrk_ty);
+  t->SetBranchAddress("ppstrk_txUnc",     ev.ppstrk_txUnc);
+  t->SetBranchAddress("ppstrk_tyUnc",     ev.ppstrk_tyUnc);
+  t->SetBranchAddress("ppstrk_chisqnorm", ev.ppstrk_chisqnorm);
+  //t->SetBranchAddress("ppstrk_t",         ev.ppstrk_t);
+  //t->SetBranchAddress("ppstrk_tUnc",      ev.ppstrk_tUnc);
   t->SetBranchAddress("nfwdtrk",         &ev.nfwdtrk);
   t->SetBranchAddress("fwdtrk_pot",       ev.fwdtrk_pot);
   t->SetBranchAddress("fwdtrk_method",    ev.fwdtrk_method);
