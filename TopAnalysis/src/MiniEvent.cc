@@ -28,7 +28,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("g_bid",     ev.g_bid,    "g_bid[ng]/I");
   t->Branch("g_tagCtrs",     ev.g_tagCtrs,    "g_tagCtrs[ng]/I");
   t->Branch("g_isSemiLepBhad",     ev.g_isSemiLepBhad,    "g_isSemiLepBhad[ng]/O");
-  t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");  
+  t->Branch("g_xb",      ev.g_xb,     "g_xb[ng]/F");
   t->Branch("g_xbp",      ev.g_xbp,   "g_xbp[ng]/F");
   t->Branch("g_pt",      ev.g_pt,     "g_pt[ng]/F");
   t->Branch("g_eta",     ev.g_eta,    "g_eta[ng]/F");
@@ -94,7 +94,7 @@ void createMiniEventTree(TTree *t,MiniEvent_t &ev,Int_t njecUncs)
   t->Branch("gamma_mvaCats",             ev.gamma_mvaCats,            "gamma_mvaCats[ngamma]/F");
   t->Branch("gamma_pt",                  ev.gamma_pt,                 "gamma_pt[ngamma]/F");
   t->Branch("gamma_eta",                 ev.gamma_eta,                "gamma_eta[ngamma]/F");
-  t->Branch("gamma_phi",                 ev.gamma_phi,                "gamma_phi[ngamma]/F");  
+  t->Branch("gamma_phi",                 ev.gamma_phi,                "gamma_phi[ngamma]/F");
   t->Branch("gamma_scaleUnc1",           ev.gamma_scaleUnc1,          "gamma_scaleUnc1[ngamma]/F");
   t->Branch("gamma_scaleUnc2",           ev.gamma_scaleUnc2,          "gamma_scaleUnc2[ngamma]/F");
   t->Branch("gamma_scaleUnc3",           ev.gamma_scaleUnc3,          "gamma_scaleUnc3[ngamma]/F");
@@ -356,7 +356,7 @@ void attachToMiniEventTree(TTree *t,MiniEvent_t &ev,bool full)
   t->SetBranchAddress("j_gathrust", ev.j_gathrust);
   t->SetBranchAddress("j_tau32",    ev.j_tau32);
   t->SetBranchAddress("j_tau21",    ev.j_tau21);
-  t->SetBranchAddress("j_deepcsv",  ev.j_deepcsv);  
+  t->SetBranchAddress("j_deepcsv",  ev.j_deepcsv);
   t->SetBranchAddress("j_vtxpx",    ev.j_vtxpx);
   t->SetBranchAddress("j_vtxpy",    ev.j_vtxpy);
   t->SetBranchAddress("j_vtxpz",    ev.j_vtxpz);
