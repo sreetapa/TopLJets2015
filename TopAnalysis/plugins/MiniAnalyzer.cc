@@ -25,6 +25,7 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
+#include "DataFormats/CTPPSReco/interface/CTPPSLocalTrackLiteFwd.h"
 
 #include "DataFormats/VertexReco/interface/VertexFwd.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
@@ -599,6 +600,34 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
   }
 
   //
+  //PPS local tracks
+  //
+  ev_.nppstrk=0;
+  edm::Handle<CTPPSLocalTrackLiteCollection> recoPPSTracks;
+  iEvent.getByToken(ctppsToken_, recoPPSTracks);
+  if(recoPPSTracks.isValid()){
+    for (const auto& trk : *recoPPSTracks)
+      {
+        CTPPSDetId detid(trk.getRPId());
+        ev_.ppstrk_pot[ev_.nppstrk]       = 100*detid.arm()+10*detid.station()+detid.rp();
+        ev_.ppstrk_x[ev_.nppstrk]         = trk.getX();
+        ev_.ppstrk_y[ev_.nppstrk]         = trk.getY();
+        ev_.ppstrk_xUnc[ev_.nppstrk]      = trk.getXUnc();
+        ev_.ppstrk_yUnc[ev_.nppstrk]      = trk.getYUnc();
+        ev_.ppstrk_tx[ev_.nppstrk]        = trk.getTx();
+        ev_.ppstrk_ty[ev_.nppstrk]        = trk.getTy();
+        ev_.ppstrk_txUnc[ev_.nppstrk]     = trk.getTxUnc();
+        ev_.ppstrk_tyUnc[ev_.nppstrk]     = trk.getTyUnc();
+        ev_.ppstrk_chisqnorm[ev_.nppstrk] = trk.getChiSquaredOverNDF();
+        /* UFSD only (2018)
+        ev_.ppstrk_t[ev_.nppstrk] = trk.getTime();
+        ev_.ppstrk_tUnc[ev_.nppstrk] = trk.getTimeUnc();
+        */
+      }
+  }
+
+
+  //
   //LEPTON SELECTION 
   ev_.nl=0; 
   
@@ -616,7 +645,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       ev_.rawmu_phi[ev_.nrawmu]=(Short_t)10*mu.phi();
       ev_.rawmu_pid[ev_.nrawmu]= mu.selectors();
       ev_.nrawmu++;
-
 
       //apply correction
       float pt  = mu.pt();

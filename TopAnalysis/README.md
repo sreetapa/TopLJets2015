@@ -14,7 +14,7 @@ cd CMSSW_10_6_0/src
 cmsenv
 
 #EGM id
-git cms-merge-topic cms-egamma:EgammaPostRecoTools_940 
+git cms-merge-topic cms-egamma:EgammaPostRecoTools
 
 #B-fragmentation analyzer
 mkdir TopQuarkAnalysis 

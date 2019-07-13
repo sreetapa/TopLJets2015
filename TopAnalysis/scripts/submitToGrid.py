@@ -70,7 +70,7 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.section_("Site")\n')
     config_file.write('config.Site.storageSite = "T2_CH_CERN"\n')
     if addParents:
-        config_file.write('config.Site.whitelist = [\'T2_CH_*\',\'T2_DE_*\',\'T2_IT_*\',\'T2_US_*\']\n')    
+        config_file.write('config.Site.whitelist = [\'T2_CH_*\',\'T2_FR_*\',\'T2_ES_*\',\'T2_BE_*\',\'T2_UK_*\',\'T2_PT_*\',\'T2_RU_*\',\'T2_DE_*\',\'T2_IT_*\',\'T2_US_*\',\'T1_*\',\'T2_BR_*\']\n')    
 
     config_file.close()
     

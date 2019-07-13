@@ -2,7 +2,7 @@ import FWCore.ParameterSet.Config as cms
 from CondCore.CondDB.CondDB_cfi import *
 from CondCore.CondDB.CondDB_cfi import *
 
-def ctppsCustom(process,era,useOpticsFromDB=False):
+def ctppsCustom(process,era,useOpticsFromDB=False,redoProtonReco=False):
     """ based on https://twiki.cern.ch/twiki/pub/CMS/TaggedProtonsRecommendations/example_cfg.py.txt """
 
     # get optics from a DB tag

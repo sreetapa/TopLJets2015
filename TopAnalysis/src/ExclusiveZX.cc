@@ -40,7 +40,7 @@ void RunExclusiveZX(const TString in_fname,
   /////////////////////
   // INITIALIZATION //
   ///////////////////
-  const char* CMSSW_BASE = getenv("CMSSW_BASE");
+  // const char* CMSSW_BASE = getenv("CMSSW_BASE");
   const TString filename(in_fname);
   bool vetoPromptPhotons = filename.Contains("_QCDEM_") || filename.Contains("_TTJets");
   
