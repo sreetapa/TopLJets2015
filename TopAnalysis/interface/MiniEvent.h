@@ -74,13 +74,6 @@ struct MiniEvent_t
   Int_t nPFCands[8],nPFChCands[8];
   Float_t sumPFHt[8],sumPFEn[8],sumPFPz[8],sumPFChHt[8],sumPFChEn[8],sumPFChPz[8];
 
-  //PPS tracks
-  Short_t nppstrk,ppstrk_pot[50];
-  Float_t ppstrk_x[50],ppstrk_y[50], ppstrk_xUnc[50],ppstrk_yUnc[50],
-    ppstrk_tx[50],ppstrk_ty[50],ppstrk_txUnc[50],ppstrk_tyUnc[50],
-    ppstrk_chisqnorm[50];
-    //ppstrk_t[50],ppstrk_tUnc[50]; // UFSD only (2018)
-
   //CTPPS protons
   Short_t nfwdtrk,fwdtrk_pot[50],fwdtrk_method[50];
   Float_t fwdtrk_thetax[50],fwdtrk_thetay[50],

@@ -588,8 +588,10 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
         ev_.ppstrk_t[ev_.nppstrk] = trk.getTime();
         ev_.ppstrk_tUnc[ev_.nppstrk] = trk.getTimeUnc();
         */
+        ev_.nppstrk++;
       }
   }
+
   //
   //PPS protons (only present in data)
   //
@@ -625,35 +627,6 @@ void MiniAnalyzer::recAnalysis(const edm::Event& iEvent, const edm::EventSetup& 
       cout << e.what() << endl;
     }
   }
-
-  //
-<<<<<<< HEAD
-  //PPS local tracks
-  //
-  ev_.nppstrk=0;
-  edm::Handle<CTPPSLocalTrackLiteCollection> recoPPSTracks;
-  iEvent.getByToken(ctppsToken_, recoPPSTracks);
-  if(recoPPSTracks.isValid()){
-    for (const auto& trk : *recoPPSTracks)
-      {
-        CTPPSDetId detid(trk.getRPId());
-        ev_.ppstrk_pot[ev_.nppstrk]       = 100*detid.arm()+10*detid.station()+detid.rp();
-        ev_.ppstrk_x[ev_.nppstrk]         = trk.getX();
-        ev_.ppstrk_y[ev_.nppstrk]         = trk.getY();
-        ev_.ppstrk_xUnc[ev_.nppstrk]      = trk.getXUnc();
-        ev_.ppstrk_yUnc[ev_.nppstrk]      = trk.getYUnc();
-        ev_.ppstrk_tx[ev_.nppstrk]        = trk.getTx();
-        ev_.ppstrk_ty[ev_.nppstrk]        = trk.getTy();
-        ev_.ppstrk_txUnc[ev_.nppstrk]     = trk.getTxUnc();
-        ev_.ppstrk_tyUnc[ev_.nppstrk]     = trk.getTyUnc();
-        ev_.ppstrk_chisqnorm[ev_.nppstrk] = trk.getChiSquaredOverNDF();
-        /* UFSD only (2018)
-        ev_.ppstrk_t[ev_.nppstrk] = trk.getTime();
-        ev_.ppstrk_tUnc[ev_.nppstrk] = trk.getTimeUnc();
-        */
-      }
-  }
-
 
   //
   //LEPTON SELECTION 
