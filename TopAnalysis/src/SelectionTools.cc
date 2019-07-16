@@ -217,6 +217,7 @@ bool SelectionTool::hasTriggerBit(TString triggerName,unsigned int word)
   std::map<TString,unsigned int>::iterator it=triggerBits_.find(triggerName);
   if(it==triggerBits_.end()) return false;
   unsigned int bit=it->second;
+  if(bit>=32) bit-=32;
   return ((word>>bit)&0x1); 
 }
 

@@ -35,6 +35,16 @@ void RunTopSummer2019(const TString in_fname,
   // INITIALIZATION //
   ///////////////////
   
+  bool isLowPUrun(false);
+  if(in_fname.Contains("2017H")) {
+    isLowPUrun=true;
+    cout << "Running with low PU run settings" << endl;
+  }
+
+  //preselection cuts to apply
+  float minLeptonPt( isLowPUrun ? 20. : 27);
+  size_t minJetMultiplicity(4);
+
   //CORRECTIONS: LUMINOSITY+PILEUP
   LumiTools lumi(era,genPU);
   std::map<Int_t,Float_t> lumiPerRun=lumi.lumiPerRun();
@@ -65,6 +75,7 @@ void RunTopSummer2019(const TString in_fname,
   ht.addHist("mlb",          new TH1F("mlb",         ";m(l,b) [GeV];Events",20,0,250)); 
   ht.addHist("nprotons",     new TH1F("nprotons",    ";Proton multiplicity; Events",6,0,6) );
   ht.addHist("csi",          new TH1F("csi",         ";#xi = #deltap/p; Events",50,0,0.3) );
+  ht.addHist("x",            new TH1F("x",           ";x  [cm]; Events",50,0,25) );
   ht.addHist("ratevsrun",    new TH1F("ratevsrun",   ";Run number; #sigma [pb]",int(lumiPerRun.size()),0,float(lumiPerRun.size())));
   int i=0;
   for(auto key : lumiPerRun) {
@@ -76,6 +87,11 @@ void RunTopSummer2019(const TString in_fname,
   //INPUT
   MiniEvent_t ev;
   TFile *f = TFile::Open(in_fname);
+  if(f==NULL || f->IsZombie()) {
+    cout << "Corrupted or missing file " << in_fname << endl;
+    return;
+  }
+
   TH1 *triggerList=(TH1 *)f->Get("analysis/triggerList");
   TTree *t = (TTree*)f->Get("analysis/data");
   attachToMiniEventTree(t,ev,true);
@@ -97,20 +113,23 @@ void RunTopSummer2019(const TString in_fname,
       //trigger
       bool hasMTrigger(false);
       if(era.Contains("2016")) hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v", ev.triggerBits) );     
-      if(era.Contains("2017")) hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu27_v", ev.triggerBits) );     
+      if(era.Contains("2017")) {
+        if(isLowPUrun) hasMTrigger=(selector.hasTriggerBit("HLT_HIMu15_v",  ev.addTriggerBits) );   
+        else           hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu27_v", ev.triggerBits) );   
+      }
       if(!hasMTrigger) continue;
 
       //select one offline muon
       std::vector<Particle> leptons = selector.flaggedLeptons(ev);     
-      leptons = selector.selLeptons(leptons,SelectionTool::TIGHT,SelectionTool::MVA90,27,2.1);
+      leptons = selector.selLeptons(leptons,SelectionTool::TIGHT,SelectionTool::MVA90,minLeptonPt,2.1);
       if(leptons.size()!=1) continue;
       if(leptons[0].id()!=13) continue;
-      
+
       //select jets
       btvSF.addBTagDecisions(ev);
       if(!ev.isData) btvSF.updateBTagDecisions(ev);      
       std::vector<Jet> allJets = selector.getGoodJets(ev,30.,2.4,leptons,{});
-      if(allJets.size()<4) continue;
+      if(allJets.size()<minJetMultiplicity) continue;
 
       //met
       TLorentzVector met(0,0,0,0);
@@ -161,25 +180,30 @@ void RunTopSummer2019(const TString in_fname,
 
       //roman pots
       int nprotons23(0), nprotons123(0);
-      for (int ift=0; ift<ev.nfwdtrk; ift++) {
+      int ntrks( isLowPUrun ? ev.nppstrk : ev.nfwdtrk );
+      for (int ift=0; ift<ntrks; ift++) {
 
         //single pot reconstruction
-        if(ev.fwdtrk_method[ift]!=0) continue;
+        if(!isLowPUrun && ev.fwdtrk_method[ift]!=0) continue;
 
         //only near (pixels) detectors
-        const unsigned short pot_raw_id = ev.fwdtrk_pot[ift];
+        const unsigned short pot_raw_id = (isLowPUrun ? ev.ppstrk_pot[ift] : ev.fwdtrk_pot[ift]);
         if (pot_raw_id!=23 && pot_raw_id!=123) continue;            
-
+          
         nprotons23 += (pot_raw_id==23);
         nprotons123 += (pot_raw_id==123);
-        float xi=ev.fwdtrk_xi[ift];
         std::vector<TString> tags={"inc",Form("rp%d",pot_raw_id)};
-        ht.fill("csi",xi,evWgt,tags);
+
+        float xi= (isLowPUrun ? 0.               : ev.fwdtrk_xi[ift]);
+        float x=  (isLowPUrun ? ev.ppstrk_x[ift] :  0. );
+
+        ht.fill("csi",     xi,                    evWgt,tags);
+        ht.fill("x",       x,                     evWgt,tags);
+        ht.fill("nprotons",nprotons23+nprotons123,evWgt,"inc");
+        ht.fill("nprotons",nprotons23,            evWgt,"rp23");
+        ht.fill("nprotons",nprotons123,           evWgt,"rp123");
       }
-      ht.fill("nprotons",nprotons23+nprotons123,evWgt,"inc");
-      ht.fill("nprotons",nprotons23,            evWgt,"rp23");
-      ht.fill("nprotons",nprotons123,           evWgt,"rp123");
-                
+ 
     }
   
   //close input file
