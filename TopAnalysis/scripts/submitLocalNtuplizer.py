@@ -10,6 +10,7 @@ def getDatasetComponents(opt):
     fList=[]
 
     #get files in the dataset
+    print 'Querying',opt.dataset
     p = subprocess.Popen(['dasgoclient --query=\"file dataset=%s\"'%opt.dataset], 
                          stdout=subprocess.PIPE, 
                          stderr=subprocess.PIPE,
@@ -48,14 +49,16 @@ def buildCondorFile(opt,fList,FarmDirectory):
 
     cmssw=os.environ['CMSSW_BASE']
 
+    secFileType=None
+
     #condor submission file
     condorFile='%s/condor_%s.sub'%(FarmDirectory,opt.jobTag)
     with open (condorFile,'w') as condor:
         condor.write('executable = {0}/worker_{1}.sh\n'.format(FarmDirectory,opt.jobTag))
-        condor.write('output     = {0}/output_common.out\n'.format(FarmDirectory))
-        condor.write('error      = {0}/output_common.err\n'.format(FarmDirectory))
-        condor.write('log        = {0}/output_common.log\n'.format(FarmDirectory))
-        condor.write('+JobFlavour = "longlunch"\n')
+        condor.write('output     = {0}/output_{1}.out\n'.format(FarmDirectory,opt.jobTag))
+        condor.write('error      = {0}/output_{1}.err\n'.format(FarmDirectory,opt.jobTag))
+        condor.write('log        = {0}/output_{1}.log\n'.format(FarmDirectory,opt.jobTag))
+        condor.write('+JobFlavour = "tomorrow"\n')
         OpSysAndVer = str(os.system('cat /etc/redhat-release'))
         if 'SLC' in OpSysAndVer:
             OpSysAndVer = "SLCern6"
@@ -64,10 +67,20 @@ def buildCondorFile(opt,fList,FarmDirectory):
         condor.write('requirements = (OpSysAndVer =?= "{0}")\n'.format(OpSysAndVer)) 
 
         for i in range(len(fList)):
-            condor.write('arguments=%d %s %s\n'%(i,fList[i][0],','.join(fList[i][1])))
+            secFileList=','.join(fList[i][1])
+            if '/RAW' in secFileList: secFileType='RAW'
+            if '/AOD' in secFileList: secFileType='AOD'
+            condor.write('arguments=%d %s %s\n'%(i,fList[i][0],secFileList))
             condor.write('queue 1\n')
                                 
     #local worker script
+    print 'Secondary file type',secFileType
+    if secFileType == 'RAW':
+        opt.extraOpts += ' redoProtonRecoFromRAW=True'
+    if secFileType == 'AOD':
+        opt.extraOpts += ' runWithAOD=True'
+    print 'Additional extra opts will be set to',opt.extraOpts
+
     workerFile='%s/worker_%s.sh'%(FarmDirectory,opt.jobTag)
     with open(workerFile,'w') as worker:
         worker.write('#!/bin/bash\n')

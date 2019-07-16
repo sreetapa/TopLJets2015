@@ -161,10 +161,11 @@ if options.inputFile:
 else:
       #use standard test files
       from TopLJets2015.TopAnalysis.customizeInputFiles import *
-      customTestInpuFiles(process,options.era,options.runOnData,runWithAOD)
+      customTestInputFiles(process,options.era,options.runOnData,options.runWithAOD)
 
 print  "Processing",process.source.fileNames
-print  "+",process.source.secondaryFileNames
+if hasattr(process.source,'secondaryFileNames'):
+      print  "+",process.source.secondaryFileNames
 
 #apply lumi json, if passed in command line
 if options.lumiJson:

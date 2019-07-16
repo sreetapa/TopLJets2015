@@ -45,8 +45,8 @@ def customTestInputFiles(process,era,runOnData,runWithAOD):
                     '/store/data/Run2017H/SingleMuon/RAW/v1/000/307/076/00000/400CA754-EDD1-E711-8947-02163E0134BF.root',
                     '/store/data/Run2017H/SingleMuon/RAW/v1/000/307/076/00000/3E805EF3-E8D1-E711-8FC4-02163E011B83.root'
                 ])
-            else:
-                process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall17MiniAODv2/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FE7ABAEB-4A42-E811-87A3-0CC47AD98D26.root')
+        else:
+            process.source.fileNames = cms.untracked.vstring('/store/mc/RunIIFall17MiniAODv2/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/FE7ABAEB-4A42-E811-87A3-0CC47AD98D26.root')
     elif '2018' in era:
         if runOnData:
             process.source.fileNames = cms.untracked.vstring('/store/data/Run2018C/SingleMuon/MINIAOD/17Sep2018-v1/00000/AB61FB4F-3A42-4B4F-93E2-78CD7E7CF0A4.root')

@@ -58,7 +58,9 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
         config_file.write('config.Data.ignoreLocality = False\n')    
 
     if isData :         
-        config_file.write('config.Data.splitting = "Automatic"\n')
+        #config_file.write('config.Data.splitting = "Automatic"\n')
+        config_file.write('config.Data.splitting = "LumiBased"\n')
+        config_file.write('config.Data.unitsPerJob = 5\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
     else : 
         config_file.write('config.Data.splitting = "FileBased"\n')
