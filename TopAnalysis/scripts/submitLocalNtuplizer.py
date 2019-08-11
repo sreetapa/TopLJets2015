@@ -58,7 +58,7 @@ def buildCondorFile(opt,fList,FarmDirectory):
         condor.write('output     = {0}/output_{1}.out\n'.format(FarmDirectory,opt.jobTag))
         condor.write('error      = {0}/output_{1}.err\n'.format(FarmDirectory,opt.jobTag))
         condor.write('log        = {0}/output_{1}.log\n'.format(FarmDirectory,opt.jobTag))
-        condor.write('+JobFlavour = "tomorrow"\n')
+        condor.write('+JobFlavour = "nextweek"\n')
         OpSysAndVer = str(os.system('cat /etc/redhat-release'))
         if 'SLC' in OpSysAndVer:
             OpSysAndVer = "SLCern6"

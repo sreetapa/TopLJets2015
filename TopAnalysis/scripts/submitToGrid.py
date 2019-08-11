@@ -37,7 +37,8 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     else:
         if isData:
             if addParents:
-                config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'runWithAOD=True\']\n' % era )
+                #config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'runWithAOD=True\']\n' % era )
+                config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'redoProtonRecoFromRAW=True\']\n' % era )
             else:
                 config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\']\n' % era )
         else:
