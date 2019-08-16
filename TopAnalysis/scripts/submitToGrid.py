@@ -6,7 +6,7 @@ import commands
 """
 creates the crab cfg and submits the job
 """
-def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2017',submit=False,addParents=False):
+def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era2017',submit=False,addParents=False,rawParents=False):
     
     from TopLJets2015.TopAnalysis.EraConfig import getEraConfiguration
     globalTag, jecTag, jecDB, jerTag, jerDB = getEraConfiguration(era=era,isData=bool(isData))
@@ -37,8 +37,12 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     else:
         if isData:
             if addParents:
-                #config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'runWithAOD=True\']\n' % era )
-                config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'redoProtonRecoFromRAW=True\']\n' % era )
+                if rawParents:
+                    print 'Parent is RAW'
+                    config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'redoProtonRecoFromRAW=True\']\n' % era )
+                else:
+                    print 'Parent is AOD'
+                    config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\',\'runWithAOD=True\']\n' % era )
             else:
                 config_file.write('config.JobType.pyCfgParams = [\'runOnData=True\',\'era=%s\']\n' % era )
         else:
@@ -59,10 +63,14 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
         config_file.write('config.Data.ignoreLocality = False\n')    
 
     if isData :         
-        #config_file.write('config.Data.splitting = "Automatic"\n')
-        config_file.write('config.Data.splitting = "LumiBased"\n')
-        config_file.write('config.Data.unitsPerJob = 5\n')
         config_file.write('config.Data.lumiMask = \'%s\'\n' %lumiMask)
+        if addParents:
+            config_file.write('config.Data.splitting = "FileBased"\n')
+            config_file.write('config.Data.unitsPerJob = 1\n')        
+        else:
+            #config_file.write('config.Data.splitting = "Automatic"\n')
+            config_file.write('config.Data.splitting = "LumiBased"\n')
+            config_file.write('config.Data.unitsPerJob = 15\n')
     else : 
         config_file.write('config.Data.splitting = "FileBased"\n')
         config_file.write('config.Data.unitsPerJob = 4\n')
@@ -73,7 +81,7 @@ def submitProduction(tag,lfnDirBase,dataset,isData,cfg,workDir,lumiMask,era='era
     config_file.write('config.section_("Site")\n')
     config_file.write('config.Site.storageSite = "T2_CH_CERN"\n')
     if addParents:
-        config_file.write('config.Site.whitelist = [\'T2_CH_*\',\'T2_FR_*\',\'T2_ES_*\',\'T2_BE_*\',\'T2_UK_*\',\'T2_PT_*\',\'T2_RU_*\',\'T2_DE_*\',\'T2_IT_*\',\'T2_US_*\',\'T1_*\',\'T2_BR_*\']\n')    
+        config_file.write('config.Site.whitelist = [\'T2_CH_CERN\']\n')    
 
     config_file.close()
     
@@ -87,8 +95,9 @@ def main():
     #configuration
     usage = 'usage: %prog [options]'
     parser = optparse.OptionParser(usage)
-    parser.add_option('-c', '--cfg',         dest='cfg'   ,      help='cfg to be sent to grid',       default=None,    type='string')
+    parser.add_option('-c', '--cfg',         dest='cfg'   ,      help='cfg to be sent to grid',        default=None,    type='string')
     parser.add_option(      '--addParents',  dest='addParents',  help='analyze parents as well',       default=False,   action='store_true')
+    parser.add_option(      '--rawParents',  dest='rawParents',  help='parent is RAW',                 default=False,   action='store_true')
     parser.add_option('-j', '--json',        dest='json'  ,      help='json with list of files',      default=None,    type='string')
     parser.add_option('-o', '--only',        dest='only'  ,      help='submit only these (csv)',      default=None,    type='string')
     parser.add_option('-l', '--lumi',        dest='lumiMask',    help='json with list of good lumis', default='/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/ReReco/Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON.txt')
@@ -132,7 +141,8 @@ def main():
                          era=opt.era,
                          workDir=opt.workDir,
                          submit=opt.submit,
-                         addParents=opt.addParents)
+                         addParents=opt.addParents,
+                         rawParents=opt.rawParents)
 
     print 'crab cfg files have been created under %s' % opt.workDir
     if opt.submit:

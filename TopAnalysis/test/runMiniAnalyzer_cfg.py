@@ -161,7 +161,7 @@ if options.inputFile:
 else:
       #use standard test files
       from TopLJets2015.TopAnalysis.customizeInputFiles import *
-      customTestInputFiles(process,options.era,options.runOnData,options.runWithAOD)
+      customTestInputFiles(process,options.era,options.runOnData,True if options.runWithAOD or options.redoProtonRecoFromRAW else False)
 
 print  "Processing",process.source.fileNames
 if hasattr(process.source,'secondaryFileNames'):

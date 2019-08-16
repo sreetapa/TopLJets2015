@@ -83,8 +83,12 @@ ANALYSISTRIGGERLISTS={
           'HLT_Mu50_v',
           'HLT_TkMu50_v',
           'HLT_ZeroBias_v',
+          'HLT_HIMu12_v',
           'HLT_HIMu15_v',
-          'HLT_HIEle15_WPLoose_Gsf_v'
+          'HLT_HIEle15_WPLoose_Gsf_v1',
+          'HLT_HIEle20_WPLoose_Gsf_v1',
+          'HLT_HIPhoton50_HoverELoose_v1',
+          'HLT_HIPhoton60_HoverELoose_v1'
       ],
     2016:['HLT_Ele32_eta2p1_WPTight_Gsf_v',
           'HLT_IsoMu24_v',

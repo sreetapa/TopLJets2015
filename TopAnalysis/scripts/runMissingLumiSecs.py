@@ -4,19 +4,15 @@ import sys
 import os
 import json
 
-WORKAREA='grid'
-
-def getListOfFiles(inputPD,runSel):
-      das_query_string = 'das_client.py --query="file dataset=%s  run in [%s] | grep file.name" --limit=0' % (inputPD,runSel)
-      das_output = os.popen(das_query_string).read() #query DAS via bash
-      das_output = das_output.replace("\"\"","'")
-      das_output = das_output.replace("root","root',")
-      das_output = das_output.replace("\n","") #don't want newline in string
-      das_output = das_output[:-1] #remove last comma in list of secondary files
-      return das_output
-
 def main():
+
       job=sys.argv[1]
+
+      #parse the work area from the location of the directory
+      WORKAREA='/'.join(job.split('/')[0:-1])
+      if WORKAREA=='': WORKAREA='./'
+      print 'Base work area is:',WORKAREA
+
       #check if any lumi section is missing
       jsonF='%s/results/notFinishedLumis.json'%job
       runSel=[]
@@ -31,18 +27,19 @@ def main():
       print 'Starting',job
       print '\t %d runs with missing lumi sections'%len(runSel)
       cfg=job.replace('crab_','')+'_cfg.py'      
-      newCfg='%s/%s'%(WORKAREA,os.path.basename(cfg.replace('_cfg','_ext_cfg')))
-      os.system('mkdir -p grid_new')
+      newWorkArea='%s_new'%WORKAREA
+      newCfg='%s/%s'%(newWorkArea,os.path.basename(cfg.replace('_cfg','_ext_cfg')))
+      os.system('mkdir -p %s_new'%newWorkArea)
       newCfgFile=open(newCfg,'w')
       lumiMaskSet=False
       for line in open(cfg,'r'):
             newLine=line      
-            if 'workArea' in newLine      : newLine='config.General.workArea = \"%s\"\n'%WORKAREA
+            if 'workArea' in newLine      : newLine='config.General.workArea = \"%s\"\n'%newWorkArea
             if 'requestName' in newLine   : newLine=newLine[:-2]+"_ext\"\n"
             if 'lumiMask' in newLine      : 
                   newLine='config.Data.lumiMask = \"%s\"\n'%os.path.abspath(jsonF)
                   lumiMaskSet=True
-            if 'unitsPerJob' in newLine   : newLine='config.Data.unitsPerJob = 25\n'
+            if 'unitsPerJob' in newLine   : newLine='config.Data.unitsPerJob = 5\n'
             if 'outLFNDirBase' in newLine : newLine=newLine[:-3]+"_ext\"\n"
             newCfgFile.write( newLine )
 

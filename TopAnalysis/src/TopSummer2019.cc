@@ -72,6 +72,7 @@ void RunTopSummer2019(const TString in_fname,
   HistTool ht;
   ht.setNsyst(0);
   ht.addHist("nvtx",         new TH1F("nvtx",        ";Vertex multiplicity;Events",50,0,100));
+  ht.addHist("njets",        new TH1F("njets",       ";Jet multiplicity;Events",10,0,10));
   ht.addHist("mlb",          new TH1F("mlb",         ";m(l,b) [GeV];Events",20,0,250)); 
   ht.addHist("nprotons",     new TH1F("nprotons",    ";Proton multiplicity; Events",6,0,6) );
   ht.addHist("csi",          new TH1F("csi",         ";#xi = #deltap/p; Events",50,0,0.3) );
@@ -114,14 +115,18 @@ void RunTopSummer2019(const TString in_fname,
       bool hasMTrigger(false);
       if(era.Contains("2016")) hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu24_v", ev.triggerBits) );     
       if(era.Contains("2017")) {
-        if(isLowPUrun) hasMTrigger=(selector.hasTriggerBit("HLT_HIMu15_v",  ev.addTriggerBits) );   
+        if(isLowPUrun) hasMTrigger=(selector.hasTriggerBit("HLT_HIMu12_v",  ev.addTriggerBits) );   
         else           hasMTrigger=(selector.hasTriggerBit("HLT_IsoMu27_v", ev.triggerBits) );   
       }
+      cout << hasMTrigger << endl;
       if(!hasMTrigger) continue;
 
       //select one offline muon
       std::vector<Particle> leptons = selector.flaggedLeptons(ev);     
-      leptons = selector.selLeptons(leptons,SelectionTool::TIGHT,SelectionTool::MVA90,minLeptonPt,2.1);
+      SelectionTool::QualityFlags muId(SelectionTool::TIGHT);
+      if(isLowPUrun) muId=SelectionTool::LOOSE;
+      leptons = selector.selLeptons(leptons,muId,SelectionTool::MVA90,minLeptonPt,2.1);
+      cout << "nl=" << leptons.size() << endl;
       if(leptons.size()!=1) continue;
       if(leptons[0].id()!=13) continue;
 
@@ -129,7 +134,7 @@ void RunTopSummer2019(const TString in_fname,
       btvSF.addBTagDecisions(ev);
       if(!ev.isData) btvSF.updateBTagDecisions(ev);      
       std::vector<Jet> allJets = selector.getGoodJets(ev,30.,2.4,leptons,{});
-      if(allJets.size()<minJetMultiplicity) continue;
+      bool passJets(allJets.size()<minJetMultiplicity);
 
       //met
       TLorentzVector met(0,0,0,0);
@@ -165,6 +170,9 @@ void RunTopSummer2019(const TString in_fname,
       
 
       ht.fill("nvtx",       ev.nvtx,        evWgt, "inc");
+      ht.fill("njets",      allJets.size(), evWgt, "inc");
+
+      if(!passJets) continue;
 
       //lepton-b systems
       for(size_t ij=0; ij<allJets.size(); ij++) 

@@ -3,7 +3,7 @@
 outdir=/store/cmst3/group/top/RunIIReReco/2017/newproton_calib
 
 #low pileup runs
-json=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Final/Cert_306896-307082_13TeV_PromptReco_#Collisions17_JSON_LowPU.txt
+json=/afs/cern.ch/cms/CAF/CMSCOMM/COMM_DQM/certification/Collisions17/13TeV/Final/Cert_306896-307082_13TeV_PromptReco_Collisions17_JSON_LowPU.txt
 commonOpts="--addParent --proxy --lumiMask ${json} --output ${outdir}"
 commonOpts="${commonOpts} --extraOpts runOnData=True,era=era2017"
 jobList=(
