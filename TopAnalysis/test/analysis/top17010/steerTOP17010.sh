@@ -50,8 +50,10 @@ if [[ ${ERA} = "2017" ]]; then
     fulllumi=41367
 fi
 
-gtList=(0.7 0.8 0.9 1.0 1.05 1.1 1.15 1.2 1.23 1.25 1.28 1.3 1.31 1.32 1.34 1.36 1.38 1.39 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0 5.0)
-mtList=(169.5 170.5 171 171.5 171.75 172 172.25 172.5 172.75 173 173.5 174.5 175.5)
+#gtList=(0.7 0.8 0.9 1.0 1.05 1.1 1.15 1.2 1.23 1.25 1.28 1.3 1.31 1.32 1.34 1.36 1.38 1.39 1.4 1.45 1.5 1.55 1.6 1.65 1.7 1.75 1.85 1.9 1.95 2.0 2.2 2.4 2.6 2.8 3.0 3.5 4.0 5.0)
+#mtList=(169.5 170.5 171 171.5 171.75 172 172.25 172.5 172.75 173 173.5 174.5 175.5)
+gtList=(0.7 0.8)
+mtList=(169.5 170.5)
 dists=em_mlb,ee_mlb,mm_mlb
 dists=${dists},emhighpt_mlb,emhighpt1b_mlb,emhighpt2b_mlb
 dists=${dists},emlowpt_mlb,emlowpt1b_mlb,emlowpt2b_mlb
@@ -63,7 +65,7 @@ dists=${dists},mmlowpt_mlb,mmlowpt1b_mlb,mmlowpt2b_mlb
 queue=workday
 outdir=${STORAGE}
 if [ -z ${outdir} ]; then
-    outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010
+    outdir=${CMSSW_BASE}/src/TopLJets2015/TopAnalysis/test/analysis/top17010/v3_20Sept2019/
 fi
 
 echo "Selection adapted to YEAR=${ERA}"
@@ -177,6 +179,8 @@ case $WHAT in
     PLOT )
 	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
         commonOpts="${commonOpts} --procSF DY:0.83"
+	#commonOpts="${commonOpts} --normToData"
+	echo "common options: ${commonOpts}" #--normToData
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount  --saveTeX -o evcount_plotter.root;
         python scripts/plotter.py ${commonOpts} -j ${json}      --only mlb,ptlb --binWid  -o lb_plotter.root;
