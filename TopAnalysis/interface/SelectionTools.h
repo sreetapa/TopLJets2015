@@ -73,6 +73,15 @@ class SelectionTool {
 
   void setDebug(bool flag) { debug_=flag; }
 
+  std::vector<Particle> parLeptons_, parWbosons_, parbs_ ;
+  std::vector<Particle> getPartonLeptons(MiniEvent_t &ev, double minPt = 20., double maxEta = 2.5);
+  std::vector<Particle> &getPartonLeptons()  { return parLeptons_; }
+  std::vector<Particle> getPartonWbosons(MiniEvent_t &ev, double minPt = 20., double maxEta = 2.5);
+  std::vector<Particle> &getPartonWbosons()  { return parWbosons_; }
+  std::vector<Particle> getPartonBs(MiniEvent_t &ev, double minPt = 20., double maxEta = 2.5);
+  std::vector<Particle> &getPartonBs()  { return parbs_; }
+
+
   void setPhotonSelection(std::vector<TString> photonTrigs={"HLT_Photon75_R9Id90_HE10_IsoM_EBOnly_PFJetsMJJ300DEta3_v","HLT_Photon200_v"},
                           SelectionTool::QualityFlags offlinePhoton=TIGHT, double addedFakeSieie = 0.0027){
     photonTriggers_=photonTrigs;

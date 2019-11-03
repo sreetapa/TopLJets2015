@@ -345,6 +345,13 @@ void TOP17010::runAnalysis()
       std::vector<Particle> flaggedleptons = selector_->flaggedLeptons(ev_);     
       std::vector<Particle> leptons        = selector_->selLeptons(flaggedleptons,SelectionTool::TIGHT,SelectionTool::TIGHT,20,2.5);
       std::vector<Jet> alljets             = selector_->getGoodJets(ev_,30.,2.4,leptons);
+
+      ////**** for Helicity weight //
+      std::vector<Particle> genleptons        = selector_->getPartonLeptons(ev_, -1, 15);
+      std::vector<Particle> genwbosons        = selector_->getPartonWbosons(ev_, -1,  15.);
+      std::vector<Particle> genbs             = selector_->getPartonBs(ev_, -1, 15 );
+
+
       applyMC2MC(alljets);
       TopWidthEvent twe(leptons,alljets);
       std::vector<Jet> tweSelJets;
@@ -370,6 +377,7 @@ void TOP17010::runAnalysis()
       // EVENT WEIGHTS //
       //////////////////
       float wgt(1.0),widthWgt(1.0),btagWgt(1.0);
+      float WgtHelicity(1.0);
       std::vector<float>puWgts(3,1.0),topptWgts(2,1.0),bfragWgts(2,1.0),slbrWgts(2,1.0);
       EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);      
       if (!ev_.isData) {
@@ -423,6 +431,11 @@ void TOP17010::runAnalysis()
           }          
         }
 
+        if(isSignal_) { 
+          WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");    
+	  //cout << " WgtsHelicity " << WgtHelicity << endl;
+        }
+
         //b-fragmentation and semi-leptonic branching fractions
         bfragWgts[0] = computeBFragmentationWeight(ev_,fragWeights_["downFrag"]);
         bfragWgts[1] = computeBFragmentationWeight(ev_,fragWeights_["upFrag"]);
@@ -434,6 +447,7 @@ void TOP17010::runAnalysis()
         wgt *= (ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         wgt *= widthWgt;
         wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first*btagWgt;
+	wgt *= WgtHelicity;
       }
       fillControlHistograms(twe,wgt);
 
@@ -475,6 +489,7 @@ void TOP17010::runAnalysis()
         double iwgt=(ev_.g_nw>0 ? ev_.g_w[0] : 1.0);
         iwgt *= (normH_? normH_->GetBinContent(1) : 1.0);
         iwgt *= widthWgt;
+	iwgt *= WgtHelicity;
 
         EffCorrection_t selSF(1.0,0.0);
         if(sname=="puup")       iwgt *= puWgts[1]*trigSF.first*selSF.first*l1trigprefireProb.first*btagWgt;
