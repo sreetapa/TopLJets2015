@@ -32,4 +32,5 @@ TF1 *getRBW(float m,float g);
 float weightBW(TF1 *bwigner,std::vector<float> &obsm,float g,float m,float gini,float mini);
 float weightHelicity (MiniEvent_t &ev, std::vector<Particle> genleptons, std::vector<Particle> genwbosons, std::vector<Particle> genbs, TString option= "left");
 
+float cosThetaStar(MiniEvent_t &ev, std::vector<Particle> genleptons, std::vector<Particle> genwbosons, std::vector<Particle> genbs);
 #endif

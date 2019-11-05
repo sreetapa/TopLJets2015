@@ -167,7 +167,8 @@ void TOP17010::bookHistograms() {
   ht_->addHist("j2pt",     new TH1D("j2pt",     ";Jet 2 transverse momentum [GeV];Events",  50,30,200));
   ht_->addHist("j2eta",    new TH1D("j2eta",    ";Jet 2 pseudo-rapidity;Events",            10,0,2.5));
   ht_->addHist("evcount",  new TH1D("evcount",  ";Pass;Events", 1,0,1));  
-  ht_->addHist("drlb",     new TH1D("drlb",     ";#DeltaR(l,b);Events", 15,0,2*TMath::Pi()));  
+  ht_->addHist("drlb",     new TH1D("drlb",     ";#DeltaR(l,b);Events", 15,0,2*TMath::Pi()));
+  ht_->addHist("cosThStar", new TH1D("cosThStar",     ";cosThStar;Events", 20, -1.0,1.0));
   TFile *rIn=TFile::Open("$CMSSW_BASE/src/TopLJets2015/TopAnalysis/test/analysis/top17010/mlbresol.root");  
   std::vector<TString> templates={"mlb","ptlb"};
   for(auto t : templates) {
@@ -378,6 +379,8 @@ void TOP17010::runAnalysis()
       //////////////////
       float wgt(1.0),widthWgt(1.0),btagWgt(1.0);
       float WgtHelicity(1.0);
+      float costhetastar(1.0);
+
       std::vector<float>puWgts(3,1.0),topptWgts(2,1.0),bfragWgts(2,1.0),slbrWgts(2,1.0);
       EffCorrection_t trigSF(1.0,0.),l1SF(1.0,0.),l2SF(1.0,0.0),l1trigprefireProb(1.0,0.);      
       if (!ev_.isData) {
@@ -449,6 +452,17 @@ void TOP17010::runAnalysis()
         wgt *= puWgts[0]*l1trigprefireProb.first*trigSF.first*l1SF.first*l2SF.first*btagWgt;
 	wgt *= WgtHelicity;
       }
+      
+      // costhetastar
+      
+      if(isSignal_) {
+	//WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");
+	costhetastar = cosThetaStar(ev_, genleptons, genwbosons, genbs);
+	cout << " costhetastar from TOP-17-010:   " << costhetastar << endl; 
+      }
+
+      ht_->fill("cosThStar", costhetastar,wgt , twe.cat);  
+
       fillControlHistograms(twe,wgt);
 
       //experimental systs cycle: better not to do anything else after this...
@@ -715,6 +729,16 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
     ht_->fill("mlb",  p4.M(),  cplotwgts, cat_vec);
   }
 
+  /*
+  float costhetastar(1.0);
+  if(isSignal_) {
+    //WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");                                                                      
+    costhetastar = cosThetaStar(ev_, genleptons, genwbosons, genbs);
+    cout << " costhetastar from TOP-17-010:   " << costhetastar << endl;
+  }
+  ht_->fill("cosThStar", costhetastar, cplotwgts, twe.cat);
+  */
+  
   //theory uncertainties are filled only for MC
   if(ev_.isData) return;
   if(ev_.g_w[0]==0 || normH_==NULL || normH_->GetBinContent(1)==0) return;
