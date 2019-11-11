@@ -95,9 +95,10 @@ case $WHAT in
 
     TESTSEL )               
         tag=MC13TeV_${ERA}_TTJets
-        input=/store/cmst3/group/top/psilva/4835852/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/crab_MC13TeV_2016_TTJets_psweights/190907_151653/0000/MiniEvents_10.root
+    #   input=/store/cmst3/group/top/psilva/4835852/TT_TuneCUETP8M2T4_PSweights_13TeV-powheg-pythia8/crab_MC13TeV_2016_TTJets_psweights/190907_151653/0000/MiniEvents_10.root
         #input=${eosdir}/${tag}/Chunk_0_ext1.root
-        output=${tag}.root 
+ 	input=/store/cmst3/group/top/RunIIReReco/2016/0c522df/MC13TeV_2016_TTJets_psweights/Chunk_0_ext0.root  
+      output=${tag}.root 
 
         gidx=`python -c "print int((2-0.7)/0.01)"`
         midx=`python -c "print int((172.5-169)/0.25)"`
@@ -124,7 +125,7 @@ case $WHAT in
         ;;
 
     MERGE )
-	./scripts/mergeOutputs.py /eos/cms/${outdir}/${githash};
+	./scripts/mergeOutputs.py ${outdir}/${githash};
 	;;
     
     SELSCAN )
@@ -177,14 +178,14 @@ case $WHAT in
 
 
     BKG )
-	commonOpts="-i /eos/cms/${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
         commonOpts="${commonOpts} --procSF t#bar{t}:0.965"
 	python scripts/plotter.py ${commonOpts} -j ${json} --only mll,mlb --silent -o dy_plotter.root;
-        python test/analysis/top17010/estimateDY.py -i /eos/cms/${outdir}/${githash}/plots/dy_plotter.root -o /eos/cms/${outdir}/${githash}/plots/;
+        python test/analysis/top17010/estimateDY.py -i ${outdir}/${githash}/plots/dy_plotter.root -o ${outdir}/${githash}/plots/;
         ;;
 
     PLOT )
-	commonOpts="-i /eos/cms/${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
+	commonOpts="-i ${outdir}/${githash} --puNormSF puwgtctr -l ${fulllumi} --saveLog --mcUnc ${lumiUnc}"
         commonOpts="${commonOpts} --procSF t#bar{t}:0.965"
 	python scripts/plotter.py ${commonOpts} -j ${json};
         python scripts/plotter.py ${commonOpts} -j ${json}      --only evcount    --saveTeX  -o evcount_plotter.root;
@@ -217,10 +218,10 @@ case $WHAT in
 
     TEMPL )
         
-        inputs=/eos/cms/${outdir}/${githash}/plots/plotter.root
-        inputs=${inputs},/eos/cms/${outdir}/${githash}/plots/syst_plotter.root
-        inputs=${inputs},/eos/cms/${outdir}/${githash}/plots/plotter_dydata.root
-        output=/eos/cms/${outdir}/${githash}/templates/
+        inputs=${outdir}/${githash}/plots/plotter.root
+        inputs=${inputs},${outdir}/${githash}/plots/syst_plotter.root
+        inputs=${inputs},${outdir}/${githash}/plots/plotter_dydata.root
+        output=${outdir}/${githash}/templates/
         python test/analysis/top17010/prepareTemplateFiles.py -i ${inputs} -d ${dists} -o ${output} --debug --bbbThr 0.005;
 
         ;;

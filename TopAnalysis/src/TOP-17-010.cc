@@ -435,7 +435,7 @@ void TOP17010::runAnalysis()
         }
 
         if(isSignal_) { 
-          WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "left");    
+          WgtHelicity = weightHelicity(ev_, genleptons, genwbosons, genbs, "longitudinal");    
 	  //cout << " WgtsHelicity " << WgtHelicity << endl;
         }
 

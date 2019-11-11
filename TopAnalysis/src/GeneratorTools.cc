@@ -246,13 +246,13 @@ float weightHelicity (MiniEvent_t &ev, vector<Particle> genleptons, vector<Parti
 	  if ( genb_id*genl_id > 0) continue;  // lep and b oppo.
 	  //        cout << "bid*lid <0 ";
 	  TLorentzVector l_wrf= genl.p4();
-	  TLorentzVector b_trf= genb.p4();
+	  TLorentzVector b_wrf= genb.p4();
 	  TVector3 wrf_boost=genw.BoostVector()*(-1);
 	  l_wrf.Boost(wrf_boost);
 	  TVector3 trf_boost=gentop.BoostVector()*(-1);
-	  b_trf.Boost(trf_boost);
+	  b_wrf.Boost(wrf_boost);
 
-	  float costhstar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
+	  float costhstar = l_wrf.Vect().Dot(b_wrf.Vect()) / (l_wrf.Vect().Mag()*b_wrf.Vect().Mag());
 	  //cout << " costhstar " << costhstar << endl; 
 	  float pdfSM = (1-costhstar)*(1-costhstar)*3/8*fL_SM + (1-costhstar*costhstar)*3/4*f0_SM + (1+costhstar)*(1+costhstar)*3/8*fR_SM;
 	  float pdf = (1-costhstar)*(1-costhstar)*3/8*fL + (1-costhstar*costhstar)*3/4*f0 + (1+costhstar)*(1+costhstar)*3/8*fR ;
@@ -306,13 +306,13 @@ float cosThetaStar (MiniEvent_t &ev, vector<Particle> genleptons, vector<Particl
 	  if ( genb_id*genl_id > 0) continue;  // lep and b oppo.
 	  //        cout << "bid*lid <0 ";
 	  TLorentzVector l_wrf= genl.p4();
-	  TLorentzVector b_trf= genb.p4();
+	  TLorentzVector b_wrf= genb.p4();
 	  TVector3 wrf_boost=genw.BoostVector()*(-1);
 	  l_wrf.Boost(wrf_boost);
 	  TVector3 trf_boost=gentop.BoostVector()*(-1);
-	  b_trf.Boost(wrf_boost);
+	  b_wrf.Boost(wrf_boost);
 
-	  float costhetastar = l_wrf.Vect().Dot(b_trf.Vect()) / (l_wrf.Vect().Mag()*b_trf.Vect().Mag());
+	  float costhetastar = l_wrf.Vect().Dot(b_wrf.Vect()) / (l_wrf.Vect().Mag()*b_wrf.Vect().Mag());
 	  cout << " costhetastar " << costhetastar << endl; 
 	  //float pdfSM = (1-costhstar)*(1-costhstar)*3/8*fL_SM + (1-costhstar*costhstar)*3/4*f0_SM + (1+costhstar)*(1+costhstar)*3/8*fR_SM;
 	  //float pdf = (1-costhstar)*(1-costhstar)*3/8*fL + (1-costhstar*costhstar)*3/4*f0 + (1+costhstar)*(1+costhstar)*3/8*fR ;
