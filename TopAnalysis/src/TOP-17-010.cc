@@ -661,6 +661,42 @@ void TOP17010::runAnalysis()
           lbPairs=itwe.getPairs();
         }
 
+	//Calculating costhetastar from lb_Pairs
+	
+	if(lbPairs.size()>=1){
+
+	  //	int r = lbPairs[0].leptonId();
+	  std::cout<<"ijets.size():"<<ijets.size()<<"lbPairs[0].bId():"<<lbPairs[0].bId()<<std::endl;
+	  std::cout<<"ileptons.size():"<<ileptons.size()<<"lbPairs[0].leptonId():"<<lbPairs[0].leptonId()<<std::endl;
+	TLorentzVector l= ileptons[lbPairs[0].leptonId()].p4();
+        TLorentzVector b= ijets[lbPairs[0].bId()].p4();
+	cout << "4-mom of leptons: "<< l.Px() <<", " << l.Py() <<"," << l.Pz() <<"," <<l.E()<< endl;
+	cout << "4-mom of b-jets: "<< b.Px() <<", " << b.Py() <<"," << b.Pz() <<"," <<b.E()<< endl;
+	Float_t a= l.Angle(b.Vect());
+        Float_t c = (a*180)/3.14;
+//        cout<<"costhetastar_from_angle= "<<cos(c)<<endl;
+//        Float_t costhetaStar_lb_Pair = l.Vect().Dot(b.Vect()) / (l.Vect().Mag()*b.Vect().Mag());
+//        cout<<"costhetastar="<<costhetaStar_lb_Pair<<endl;
+	cout<<"angle_before_boost= "<<a<<endl;
+	
+	for(auto p4 : lbPairs){
+//	TLorentzVector n = lbPairs[0].p4();
+//	cout << "4-mom of lbPair: "<< n.Px() <<", " << n.Py() <<"," << n.Pz() <<"," <<n.E()<< endl;
+	TVector3 lb_boost = p4.BoostVector()*(-1);
+	l.Boost(lb_boost);
+ 	b.Boost(lb_boost);
+//	lbPairs[0].Boost(lb_boost);
+//	TLorentzVector r= ileptons[lbPairs[0].leptonId()].p4();
+//	TLorentzVector s= ijets[lbPairs[0].bId()].p4();
+	Float_t d= l.Angle(b.Vect());
+//	Float_t k = (d*180)/3.14;
+	cout<<"angle_when_boosted_in_lbframe= " << d <<endl;
+        ht_->fill("cosThStar_lb_Pair", cos(c),wgt , twe.cat);
+	}
+	}
+//	 ht_->fill("cosThStar_lb_Pair", cos(c),wgt , twe.cat);
+
+
         //fill with new values/weights
         std::vector<double> eweights(1,iwgt);
 
@@ -711,7 +747,7 @@ void TOP17010::fillControlHistograms(TopWidthEvent &twe,float &wgt) {
   ht_->fill("l1eta",   fabs(twe.l1eta), cplotwgts,twe.cat);
   ht_->fill("l2pt",    twe.l2pt,        cplotwgts,twe.cat);
   ht_->fill("l2eta",   fabs(twe.l2eta), cplotwgts,twe.cat);
-  ht_->fill("njets",   twe.njets,       cplotwgts,twe.cat);
+  ht_->fill("njlets",   twe.njets,       cplotwgts,twe.cat);
   ht_->fill("nbjets",  twe.nbjets,      cplotwgts,twe.cat);
   ht_->fill("j1pt",    twe.j1pt,        cplotwgts,twe.cat);
   ht_->fill("j1eta",   fabs(twe.j1eta), cplotwgts,twe.cat);

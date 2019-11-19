@@ -73,14 +73,50 @@ TopWidthEvent::TopWidthEvent(std::vector<Particle> &leptons,std::vector<Jet> &je
               });
     
     lbPairs_.push_back( allPairs[0] );
+/*	if (lbPairs_.size()>=1){	
+	cout << "leptonID of hightest pt lbpair" << lbPairs_[0].leptonId() << endl;
+	cout << "b-jetID of hightest pt lbpair" << lbPairs_[0].bId() << endl;
+	}*/
     for(size_t ipair=1; ipair<4; ipair++) {
       if( allPairs[0].leptonId() ==  allPairs[ipair].leptonId() ) continue;
       if( allPairs[0].bId()      ==  allPairs[ipair].bId() ) continue;
       lbPairs_.push_back(allPairs[ipair]);
       break;
-    }
+
+
+/*	if(allPairs[0]) {
+
+        TLorentzVector l= leptons[0].p4();
+        TLorentzVector b= bJets[0].p4();
+        Float_t a= l.Angle(b.Vect());
+        Float_t c = (a*180)/3.14;
+        cout<<"costhetastar_from_angle="<<cos(c)<<endl;
+        Float_t costhetaStar = l.Vect().Dot(b.Vect()) / (l.VegetJetIndex()ct().Mag()*b.Vect().Mag());
+        cout<<"costhetastar="<<costhetaStar<<endl;
+        }
+  */ 
+ }
   }
 
+if (lbPairs_.size()>=1){
+ 	cout << "size of lb_pair:  " << lbPairs_.size() << endl;
+//	cout << "" << lbPairs_
+        cout << "leptonID of hightest pt lbpair:  " << lbPairs_[0].leptonId() << endl;
+        cout << "b-jetID of hightest pt lbpair" << lbPairs_[0].bId() << endl;
+        }
+//TopWidthEvent topwe(leptons,alljets);
+
+/*  if(allPairs[0]) { 
+
+        TLorentzVector l= leptons[0].p4();
+        TLorentzVector b= bJets[0].p4();
+        Float_t a= l.Angle(b.Vect());
+        Float_t c = (a*180)/3.14;
+        cout<<"costhetastar_from_angle="<<cos(c)<<endl;
+        Float_t costhetaStar = l.Vect().Dot(b.Vect()) / (l.Vect().Mag()*b.Vect().Mag());
+        cout<<"costhetastar="<<costhetaStar<<endl;
+        }
+*/
   //assign category
   dilcode=(abs(leptons[0].id()*leptons[1].id()));
   if(dilcode==11*11) cat=isZ ? "zee":"ee";
